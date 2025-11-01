@@ -28,8 +28,8 @@ export default function NesApp() {
     const choice = initialScreen.menu[index]
     if (choice === 'Start') {
       setScreen('game')
-      setMessage('Starting...
-Press B to go back')
+      setMessage(`Starting...
+Press B to go back`)
     } else if (choice === 'Settings') {
       setScreen('settings')
     } else if (choice === 'About') {
