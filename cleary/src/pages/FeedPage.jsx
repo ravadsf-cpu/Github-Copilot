@@ -93,6 +93,7 @@ const FeedPage = () => {
       let score = 0;
       const title = (a.title || '').toLowerCase();
       const desc = (a.summary || a.description || '').toLowerCase();
+      const hasVideo = !!(a.media && a.media.videos && a.media.videos.length > 0);
       // recency
       try {
         const hours = (Date.now() - new Date(a.publishedAt || 0).getTime()) / 36e5;
@@ -115,6 +116,8 @@ const FeedPage = () => {
         const host = u.hostname.replace(/^www\./,'');
         if (premium.includes(host)) score += 10;
       } catch {}
+      // video boost: prefer articles with videos
+      if (hasVideo) score += 12;
       return { ...a, _score: score };
     })
     .sort((x, y) => y._score - x._score)
@@ -140,8 +143,16 @@ const FeedPage = () => {
   const mergedArticles = React.useMemo(() => {
     const ids = new Set();
     const ordered = [];
+    // Prioritize remaining items with videos at the top while preserving input order
+    const withVideo = [];
+    const withoutVideo = [];
+    (displayArticles || []).forEach(a => {
+      const hasVid = !!(a.media && a.media.videos && a.media.videos.length > 0);
+      (hasVid ? withVideo : withoutVideo).push(a);
+    });
+    const prioritized = [...withVideo, ...withoutVideo];
     (happeningNow || []).forEach(a => { if (!ids.has(a.id)) { ids.add(a.id); ordered.push(a); } });
-    (displayArticles || []).forEach(a => { if (!ids.has(a.id)) { ids.add(a.id); ordered.push(a); } });
+    prioritized.forEach(a => { if (!ids.has(a.id)) { ids.add(a.id); ordered.push(a); } });
     return ordered;
   }, [happeningNow, displayArticles]);
 
