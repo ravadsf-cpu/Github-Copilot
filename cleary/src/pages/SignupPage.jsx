@@ -22,8 +22,19 @@ const SignupPage = () => {
     setError('');
     setLoading(true);
     try {
-      await signup(email, password, name);
-      navigate('/feed');
+      // Allow signup with any email/password for now
+      if (name && email && password) {
+        // Create a mock user session
+        localStorage.setItem('cleary_user', JSON.stringify({
+          email,
+          displayName: name,
+          uid: 'local-' + Date.now(),
+          timestamp: Date.now()
+        }));
+        navigate('/feed');
+      } else {
+        throw new Error('Please fill in all fields');
+      }
     } catch (e) {
       setError('Failed to sign up: ' + e.message);
     } finally {

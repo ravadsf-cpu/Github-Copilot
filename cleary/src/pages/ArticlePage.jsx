@@ -180,23 +180,31 @@ const ArticlePage = () => {
               transition={{ delay: 0.35 }}
               className="mb-8"
             >
-              <h2 className="text-xl font-semibold text-white mb-4">Images</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">Images ({article.media.images.length})</h2>
               <div className={`grid gap-4 ${article.media.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                {article.media.images.map((img, idx) => (
-                  <div key={idx} className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                    <img
-                      src={img.src}
-                      alt={img.alt || `Article image ${idx + 1}`}
-                      className="w-full h-auto object-cover"
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                    {img.alt && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-2">
-                        <p className="text-xs text-gray-300">{img.alt}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                {article.media.images.slice(0, 8).map((img, idx) => {
+                  const imgSrc = typeof img === 'string' ? img : img.src;
+                  const imgAlt = typeof img === 'object' ? img.alt : '';
+                  return (
+                    <div key={idx} className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                      <img
+                        src={imgSrc}
+                        alt={imgAlt || `Article image ${idx + 1}`}
+                        className="w-full h-auto object-cover max-h-96"
+                        loading="lazy"
+                        onError={(e) => { 
+                          console.log('Image failed to load:', imgSrc);
+                          e.target.parentElement.style.display = 'none'; 
+                        }}
+                      />
+                      {imgAlt && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-2">
+                          <p className="text-xs text-gray-300">{imgAlt}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
@@ -209,25 +217,41 @@ const ArticlePage = () => {
               transition={{ delay: 0.37 }}
               className="mb-8"
             >
-              <h2 className="text-xl font-semibold text-white mb-4">Videos</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">Videos ({article.media.videos.length})</h2>
               <div className="space-y-4">
-                {article.media.videos.map((vid, idx) => (
-                  <div key={idx} className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                    {vid.kind === 'iframe' ? (
-                      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                        <iframe
-                          src={vid.src}
-                          title={`Video ${idx + 1}`}
-                          className="absolute inset-0 w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    ) : (
-                      <video
-                        controls
-                        className="w-full h-auto"
-                        src={vid.src}
+                {article.media.videos.slice(0, 4).map((vid, idx) => {
+                  const videoSrc = typeof vid === 'string' ? vid : vid.src;
+                  const videoKind = typeof vid === 'object' ? vid.kind : 'iframe';
+                  return (
+                    <div key={idx} className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                      {videoKind === 'iframe' ? (
+                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                          <iframe
+                            src={videoSrc}
+                            title={`Video ${idx + 1}`}
+                            className="absolute inset-0 w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <video
+                          controls
+                          className="w-full h-auto"
+                          src={videoSrc}
+                          type={vid.type || 'video/mp4'}
+                          preload="metadata"
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
                         type={vid.type}
                       >
                         Your browser does not support the video tag.

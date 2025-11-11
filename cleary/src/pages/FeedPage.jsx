@@ -6,7 +6,6 @@ import NewsCard from '../components/NewsCard';
 import MoodSelector from '../components/MoodSelector';
 import ChatBot from '../components/ChatBot';
 import AISection from '../components/AISection';
-import DiversityMeter from '../components/DiversityMeter';
 import { mockArticles } from '../utils/mockData';
 import { fetchNews, getLean } from '../utils/aiService';
 import { useApp } from '../contexts/AppContext';
@@ -234,13 +233,6 @@ const FeedPage = () => {
         
         {/* Mood Selector - only show if not displaying AI results */}
         {!aiArticles && <MoodSelector />}
-
-        {/* Diversity Meter - show when articles loaded and not AI results */}
-        {!aiArticles && !loading && displayArticles.length > 5 && (
-          <div className="my-6">
-            <DiversityMeter articles={displayArticles} />
-          </div>
-        )}
 
         {/* Search and Filters with glow effects */}
         <motion.div

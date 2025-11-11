@@ -21,8 +21,19 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/feed');
+      // Allow sign in with any email/password for now
+      if (email && password) {
+        // Create a mock user session
+        localStorage.setItem('cleary_user', JSON.stringify({
+          email,
+          displayName: email.split('@')[0],
+          uid: 'local-' + Date.now(),
+          timestamp: Date.now()
+        }));
+        navigate('/feed');
+      } else {
+        throw new Error('Please enter email and password');
+      }
     } catch (e) {
       setError('Failed to log in: ' + e.message);
     } finally {
