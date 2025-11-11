@@ -45,6 +45,23 @@ const RSS_FEEDS = {
   ],
 };
 
+// Regional feeds for higher geo-specific relevance
+const REGIONAL_FEEDS = {
+  india: [
+    'https://www.thehindu.com/news/national/feeder/default.rss',
+    'https://www.hindustantimes.com/rss/india/rssfeed.xml',
+    'https://indianexpress.com/section/india/feed/',
+    'https://feeds.feedburner.com/ndtvnews-india-news',
+    'https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms'
+  ],
+  pakistan: [
+    'https://www.dawn.com/feed',
+    'https://www.thenews.com.pk/rss/1/1',
+    'https://tribune.com.pk/rss/latest.xml',
+    'https://feeds.feedburner.com/GeoPakistan'
+  ]
+};
+
 const stripHtml = (html) => {
   if (!html) return '';
   return html
@@ -111,6 +128,38 @@ async function fetchFromRSS(category = 'breaking') {
   return allArticles;
 }
 
+// Fetch from an explicit list of feed URLs (used for regional/grouped feeds)
+async function fetchFromFeeds(feedUrls = []) {
+  const allArticles = [];
+  for (const feedUrl of feedUrls) {
+    try {
+      const feed = await rssParser.parseURL(feedUrl);
+      const articles = feed.items.slice(0, 15).map((item) => {
+        let fullContent = item['content:encoded'] || item.content || item.summary || item.description || '';
+        const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
+        const { images: htmlImages, videos: htmlVideos } = extractMediaFromHtml(fullContent);
+        const cleanContent = stripHtml(fullContent);
+
+        return {
+          title: item.title,
+          description: item.contentSnippet || stripHtml(item.description) || '',
+          url: item.link,
+          urlToImage: item.enclosure?.url || htmlImages[0]?.src || '',
+          source: { name: feed.title || 'RSS Feed' },
+          publishedAt: item.pubDate || new Date().toISOString(),
+          content: cleanContent || item.contentSnippet || '',
+          contentHtml,
+          media: { images: htmlImages, videos: htmlVideos },
+        };
+      });
+      allArticles.push(...articles);
+    } catch (e) {
+      console.error(`RSS error for ${feedUrl}:`, e.message);
+    }
+  }
+  return allArticles;
+}
+
 async function summarizeWithAI(text, maxLength = 160) {
   if (!genAI || !text) return text.slice(0, maxLength);
   try {
@@ -149,8 +198,10 @@ module.exports = {
   genAI,
   rssParser,
   fetchFromRSS,
+  fetchFromFeeds,
   summarizeWithAI,
   detectCategory,
   inferLean,
   stripHtml,
+  REGIONAL_FEEDS,
 };

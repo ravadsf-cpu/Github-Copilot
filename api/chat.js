@@ -1,4 +1,4 @@
-const { genAI, fetchFromRSS } = require('./_lib/shared');
+const { genAI, fetchFromRSS, fetchFromFeeds, REGIONAL_FEEDS, stripHtml } = require('./_lib/shared');
 let OpenAIClient = null;
 try {
   // Lazy require to avoid bundling if not used
@@ -61,23 +61,117 @@ module.exports = async (req, res) => {
 
     // Heuristic fallback: return live headlines based on intent
     const msg = (message || '').toLowerCase();
-    // Expand intents: india/pakistan/world/business/tech/health/politics
+
+    // Simple in-memory cache per serverless instance
+    const CACHE_TTL_MS = 90 * 1000;
+    if (!global.__CHAT_CACHE__) global.__CHAT_CACHE__ = new Map();
+    const cache = global.__CHAT_CACHE__;
+    const cacheGet = (key) => {
+      const v = cache.get(key);
+      if (v && (Date.now() - v.ts) < CACHE_TTL_MS) return v.data;
+      return null;
+    };
+    const cacheSet = (key, data) => cache.set(key, { ts: Date.now(), data });
+
+    // Region detection
+    const hasIndia = /(\bindia\b|delhi|mumbai|bengaluru|bangalore|kolkata|calcutta|chennai|kashmir)/i.test(msg);
+    const hasPakistan = /(\bpakistan\b|karachi|lahore|islamabad|rawalpindi|peshawar|kashmir)/i.test(msg);
+    const wantsSouthAsia = /(south\s?asia|india.*pakistan|pakistan.*india)/i.test(msg);
+
+    const pickHeader = () => {
+      if (wantsSouthAsia || (hasIndia && hasPakistan)) return 'Top South Asia stories:';
+      if (hasIndia) return 'Top India stories:';
+      if (hasPakistan) return 'Top Pakistan stories:';
+      return null;
+    };
+
+    const keywords = [];
+    if (wantsSouthAsia || (hasIndia && hasPakistan)) {
+      keywords.push('india','indian','delhi','mumbai','bengaluru','kolkata','chennai','kashmir','pakistan','pakistani','karachi','lahore','islamabad','peshawar','south asia');
+    } else if (hasIndia) {
+      keywords.push('india','indian','delhi','mumbai','bengaluru','kolkata','chennai','kashmir');
+    } else if (hasPakistan) {
+      keywords.push('pakistan','pakistani','karachi','lahore','islamabad','peshawar','kashmir');
+    }
+
+    const dedupe = (arr) => {
+      const seen = new Set();
+      return arr.filter(a => {
+        const key = (a.url || a.title || '').toLowerCase();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+
+    const matchesKeywords = (a) => {
+      if (!keywords.length) return false;
+      const text = `${a.title || ''} ${a.description || ''} ${a.content || ''}`.toLowerCase();
+      return keywords.some(k => text.includes(k));
+    };
+
+    // If regional intent detected, use regional feeds + world fallback
+    if (keywords.length) {
+      const regionKey = wantsSouthAsia || (hasIndia && hasPakistan)
+        ? 'south-asia'
+        : hasIndia ? 'india' : 'pakistan';
+      const cacheKey = `region:${regionKey}`;
+
+      let regionArticles = cacheGet(cacheKey);
+      if (!regionArticles) {
+        const feeds = regionKey === 'south-asia'
+          ? [...(REGIONAL_FEEDS.india || []), ...(REGIONAL_FEEDS.pakistan || [])]
+          : REGIONAL_FEEDS[regionKey] || [];
+        regionArticles = await fetchFromFeeds(feeds);
+        cacheSet(cacheKey, regionArticles);
+      }
+
+      let worldArticles = cacheGet('category:world');
+      if (!worldArticles) {
+        worldArticles = await fetchFromRSS('world');
+        cacheSet('category:world', worldArticles);
+      }
+
+      const topRegion = dedupe(regionArticles.filter(matchesKeywords)).slice(0, 5);
+      // Fill from world articles that match, then remaining recency from region/world
+      const filled = [...topRegion];
+      if (filled.length < 5) {
+        const worldMatches = dedupe(worldArticles.filter(matchesKeywords)).filter(a => !filled.find(f => f.url === a.url));
+        filled.push(...worldMatches.slice(0, 5 - filled.length));
+      }
+      if (filled.length < 5) {
+        const regionMore = dedupe(regionArticles).filter(a => !filled.find(f => f.url === a.url));
+        filled.push(...regionMore.slice(0, 5 - filled.length));
+      }
+      if (filled.length < 5) {
+        const worldMore = dedupe(worldArticles).filter(a => !filled.find(f => f.url === a.url));
+        filled.push(...worldMore.slice(0, 5 - filled.length));
+      }
+
+      if (filled.length) {
+        const header = pickHeader() || 'Top world stories:';
+        const bullets = filled.slice(0,5).map((a, i) => `${i+1}. ${a.title} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
+        return res.status(200).json({ response: `${header}\n\n${bullets}` });
+      }
+    }
+
+    // Category-based fallback if no regional intent
     let category = 'breaking';
-    if (/(india|pakistan|south asia|asia)/i.test(msg)) category = 'world';
-    else if (/business|econom(y|ic)|market|stocks|finance/.test(msg)) category = 'business';
+    if (/business|econom(y|ic)|market|stocks|finance/.test(msg)) category = 'business';
     else if (/politic|election|policy|government/.test(msg)) category = 'politics';
     else if (/health|covid|vaccine|disease/.test(msg)) category = 'health';
-    else if (/tech|technology|ai|software|hardware/.test(msg)) category = 'science';
+    else if (/tech|technology|ai|software|hardware|science/.test(msg)) category = 'science';
 
-    const articles = await fetchFromRSS(category);
+    const catKey = `category:${category}`;
+    let articles = cacheGet(catKey);
+    if (!articles) {
+      articles = await fetchFromRSS(category);
+      cacheSet(catKey, articles);
+    }
     const top = articles.slice(0, 5);
     if (top.length) {
       const bullets = top.map((a, i) => `${i+1}. ${a.title} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
-      const header = category === 'breaking'
-        ? 'Top breaking stories:'
-        : category === 'world' && /(india|pakistan)/.test(msg)
-          ? 'Top South Asia stories:'
-          : `Top ${category} stories:`;
+      const header = category === 'breaking' ? 'Top breaking stories:' : `Top ${category} stories:`;
       return res.status(200).json({ response: `${header}\n\n${bullets}` });
     }
 
