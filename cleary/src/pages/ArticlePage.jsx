@@ -319,66 +319,83 @@ const ArticlePage = () => {
                   if (videoKind === 'iframe' && videoSrc) {
                     // Try to show a preview thumbnail for YouTube/Vimeo
                     let thumb = null;
+                    let videoId = null;
                     if (/youtube\.com|youtu\.be/.test(videoSrc)) {
-                      const match = videoSrc.match(/embed\/([\w-]{6,})/);
-                      if (match) thumb = `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
+                      const match = videoSrc.match(/embed\/([\w-]{11})/);
+                      if (match) {
+                        videoId = match[1];
+                        thumb = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+                      }
                     } else if (/vimeo\.com/.test(videoSrc)) {
                       const match = videoSrc.match(/video\/([0-9]+)/);
-                      if (match) thumb = `https://vumbnail.com/${match[1]}.jpg`;
+                      if (match) {
+                        videoId = match[1];
+                        thumb = `https://vumbnail.com/${videoId}.jpg`;
+                      }
                     }
                     // Fallback image if no thumb
                     const fallbackImg = article.urlToImage || article.image || (article.media?.images?.[0]?.src);
-                    const displayThumb = thumb || fallbackImg || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="450"%3E%3Crect fill="%23222" width="800" height="450"/%3E%3C/svg%3E';
+                    const displayThumb = thumb || fallbackImg;
                     
                     return (
-                      <div key={idx} className="relative rounded-xl overflow-hidden border border-white/10" style={{ minHeight: '400px', background: '#1a1a1a' }}>
-                        {/* Background thumbnail - always visible */}
-                        <img 
-                          src={displayThumb} 
-                          alt="Video preview" 
-                          className="absolute inset-0 w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="450"%3E%3Crect fill="%23222" width="800" height="450"/%3E%3C/svg%3E';
-                          }}
-                        />
-                        {/* Iframe container */}
-                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                          <iframe
-                            src={videoSrc}
-                            title={`Video ${idx + 1}`}
-                            className="absolute inset-0 w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            loading="eager"
+                      <div key={idx} className="relative rounded-xl overflow-hidden border border-white/10" style={{ minHeight: '450px', background: '#000' }}>
+                        {/* Video thumbnail */}
+                        {displayThumb ? (
+                          <img 
+                            src={displayThumb} 
+                            alt="Video preview" 
+                            className="w-full h-full object-cover"
+                            style={{ minHeight: '450px' }}
+                            onError={(e) => {
+                              console.log('Thumbnail failed to load:', displayThumb);
+                              if (fallbackImg && e.target.src !== fallbackImg) {
+                                e.target.src = fallbackImg;
+                              }
+                            }}
                           />
-                        </div>
-                        {/* Large clickable play button that opens video */}
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-800" style={{ minHeight: '450px' }}>
+                            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1">
+                              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                              <line x1="7" y1="2" x2="7" y2="22"></line>
+                              <line x1="17" y1="2" x2="17" y2="22"></line>
+                              <line x1="2" y1="12" x2="22" y2="12"></line>
+                              <line x1="2" y1="7" x2="7" y2="7"></line>
+                              <line x1="2" y1="17" x2="7" y2="17"></line>
+                              <line x1="17" y1="17" x2="22" y2="17"></line>
+                              <line x1="17" y1="7" x2="22" y2="7"></line>
+                            </svg>
+                          </div>
+                        )}
+                        
+                        {/* Large clickable play button overlay */}
                         <a 
                           href={videoSrc} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="absolute inset-0 flex items-center justify-center group cursor-pointer"
-                          style={{ zIndex: 10 }}
+                          className="absolute inset-0 flex items-center justify-center group cursor-pointer bg-black/30 hover:bg-black/20 transition-all"
                         >
-                          <div className="bg-purple-600 group-hover:bg-purple-700 rounded-full p-8 shadow-2xl transition-all transform group-hover:scale-110">
+                          <div className="bg-red-600 group-hover:bg-red-700 rounded-full p-8 shadow-2xl transition-all transform group-hover:scale-110">
                             <svg width="80" height="80" viewBox="0 0 24 24" fill="white" stroke="none">
                               <polygon points="5 3 19 12 5 21 5 3" />
                             </svg>
                           </div>
                         </a>
-                        {/* Open in new tab button */}
+                        
+                        {/* Video label */}
+                        <div className="absolute top-4 left-4 px-3 py-1 rounded bg-red-600 text-white text-xs font-bold">
+                          VIDEO
+                        </div>
+                        
+                        {/* Open in YouTube/Vimeo button */}
                         <a 
                           href={videoSrc} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 shadow-lg z-20"
+                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg bg-purple-600 text-white text-base font-semibold hover:bg-purple-700 shadow-lg transition-all"
                         >
-                          Open in new tab
+                          Watch on YouTube
                         </a>
-                        {/* Helpful text at bottom */}
-                        <div className="absolute bottom-4 left-4 right-4 bg-black/90 text-white text-sm rounded-lg px-4 py-2 z-20">
-                          If video doesn't play, open in YouTube/Vimeo.
-                        </div>
                       </div>
                     );
                   }
