@@ -1,4 +1,57 @@
-const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, genAI } = require('./_lib/shared');
+const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, genAI, toEmbedFromUrl } = require('./_lib/shared');
+let fetch;
+try { fetch = require('node-fetch'); } catch { /* Node 18 runtime may have global fetch */ }
+const cheerio = require('cheerio');
+
+async function tryFetch(url, options = {}, timeoutMs = 4000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const resp = await (fetch ? fetch(url, { ...options, signal: ctrl.signal }) : global.fetch(url, { ...options, signal: ctrl.signal }));
+    return resp;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+async function scrapeVideos(url) {
+  try {
+    const resp = await tryFetch(url, { redirect: 'follow' });
+    if (!resp || !resp.ok) return [];
+    const html = await resp.text();
+    const $ = cheerio.load(html);
+    const vids = [];
+    // Meta players
+    $('meta[property="og:video"], meta[property="og:video:secure_url"], meta[name="twitter:player"]').each((_, el) => {
+      const v = $(el).attr('content');
+      if (v) vids.push(toEmbedFromUrl(v) || { kind: 'iframe', src: v });
+    });
+    // Iframes
+    $('iframe').each((_, el) => {
+      const v = $(el).attr('src');
+      if (v) vids.push(toEmbedFromUrl(v) || { kind: 'iframe', src: v });
+    });
+    // Video tags
+    $('video').each((_, el) => {
+      const v = $(el).attr('src');
+      if (v) vids.push(toEmbedFromUrl(v) || { kind: 'video', src: v });
+      $(el).find('source').each((__, se) => {
+        const s = $(se).attr('src');
+        const t = $(se).attr('type');
+        if (s) vids.push({ kind: 'video', src: s, type: t });
+      });
+    });
+    // Dedup by src
+    const seen = new Set();
+    return vids.filter(v => {
+      const key = typeof v === 'string' ? v : v.src;
+      if (!key || seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+  } catch {
+    return [];
+  }
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -43,6 +96,17 @@ module.exports = async (req, res) => {
         id: article.url,
         readTime: Math.ceil((article.content || article.description).split(' ').length / 200),
       };
+    }));
+
+    // Lightweight video enrichment: try to detect videos for top items with none
+    // Limit to avoid latency; best effort only
+    const candidates = articles.slice(0, 12).filter(a => !(a.media && a.media.videos && a.media.videos.length > 0) && a.url);
+    await Promise.all(candidates.map(async (a) => {
+      const vids = await scrapeVideos(a.url);
+      if (vids && vids.length) {
+        a.media = a.media || { images: [], videos: [] };
+        a.media.videos = vids;
+      }
     }));
 
     // Filter by search query
