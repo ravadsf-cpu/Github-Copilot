@@ -75,13 +75,15 @@ const NewsCard = ({ article, index }) => {
       >
         {/* Image */}
         {(() => {
+          const hasVideo = !!(article.media?.videos && article.media.videos.length > 0);
           const cardImage = article.urlToImage || article.image || article.media?.images?.[0]?.src;
-          return cardImage ? (
+          // If no image but has video, show a stylish placeholder so the play overlay is obvious
+          return (cardImage || hasVideo) ? (
           <div className="relative h-48 overflow-hidden">
             <motion.img
-              src={cardImage}
+              src={cardImage || ''}
               alt={article.title}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover ${cardImage ? '' : 'hidden'}`}
               animate={{
                 scale: isHovered ? 1.05 : 1
               }}
@@ -91,6 +93,9 @@ const NewsCard = ({ article, index }) => {
                 e.target.parentElement.style.display = 'none';
               }}
             />
+            {!cardImage && hasVideo && (
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-800/70 via-black/60 to-pink-800/70" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             
             {/* Mood badge */}
@@ -102,6 +107,15 @@ const NewsCard = ({ article, index }) => {
             {article.bias && (
               <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-black/60 backdrop-blur-sm border border-white/20 text-xs font-medium text-white capitalize">
                 {article.bias}
+              </div>
+            )}
+
+            {/* Prominent VIDEO ribbon */}
+            {hasVideo && (
+              <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
+                <div className="px-2 py-0.5 rounded-md bg-gradient-to-r from-pink-600 to-purple-600 text-[10px] font-extrabold text-white tracking-wider shadow-lg border border-white/20">
+                  VIDEO
+                </div>
               </div>
             )}
 
@@ -166,19 +180,15 @@ const NewsCard = ({ article, index }) => {
               </AnimatePresence>
             </div>
 
-            {/* Media badges */}
-            {(article.media?.images?.length || article.media?.videos?.length) && (
-              <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                {article.media?.images?.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-white/20 text-white text-[10px] font-semibold">
-                    {article.media.images.length} img
-                  </span>
-                )}
-                {article.media?.videos?.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-white/20 text-white text-[10px] font-semibold">
-                    {article.media.videos.length} vid
-                  </span>
-                )}
+            {/* Center Play overlay for video */}
+            {hasVideo && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  <div className="absolute -inset-2 rounded-full bg-pink-500/20 blur-md animate-pulse" />
+                  <div className="w-14 h-14 rounded-full bg-black/60 backdrop-blur border border-white/30 flex items-center justify-center shadow-xl">
+                    <div className="ml-0.5 w-0 h-0 border-t-6 border-b-6 border-l-8 border-t-transparent border-b-transparent border-l-white" style={{ borderTopWidth: 12, borderBottomWidth: 12, borderLeftWidth: 18 }} />
+                  </div>
+                </div>
               </div>
             )}
           </div>
