@@ -152,6 +152,33 @@ const extractMediaFromHtml = (html) => {
       const emb = toEmbedFromUrl(full);
       if (emb) videos.push(emb);
     }
+
+    // JSON-LD VideoObject parsing
+    const jsonLdRegex = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+    let jmatch;
+    while ((jmatch = jsonLdRegex.exec(html)) !== null) {
+      try {
+        const json = JSON.parse(jmatch[1].trim());
+        const arr = Array.isArray(json) ? json : [json];
+        arr.forEach(obj => {
+          if (!obj || typeof obj !== 'object') return;
+          if ((obj['@type'] === 'VideoObject') || (Array.isArray(obj['@type']) && obj['@type'].includes('VideoObject'))) {
+            const vurl = obj.embedUrl || obj.contentUrl || obj.url;
+            const emb = toEmbedFromUrl(vurl) || (vurl ? { kind: 'iframe', src: vurl } : null);
+            if (emb) {
+              // attach thumbnail if present
+              const t = Array.isArray(obj.thumbnailUrl) ? obj.thumbnailUrl[0] : obj.thumbnailUrl;
+              if (t) emb.thumbnail = t;
+              videos.push(emb);
+            }
+            if (obj.thumbnailUrl) {
+              const thumbs = Array.isArray(obj.thumbnailUrl) ? obj.thumbnailUrl : [obj.thumbnailUrl];
+              thumbs.forEach(u => u && images.push({ src: u }));
+            }
+          }
+        });
+      } catch {}
+    }
   } catch {}
   return { images, videos };
 };
@@ -440,4 +467,5 @@ module.exports = {
   stripHtml,
   REGIONAL_FEEDS,
   toEmbedFromUrl,
+  extractMediaFromHtml,
 };

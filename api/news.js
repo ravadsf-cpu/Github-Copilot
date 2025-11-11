@@ -1,4 +1,4 @@
-const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, genAI, toEmbedFromUrl } = require('./_lib/shared');
+const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, genAI, toEmbedFromUrl, extractMediaFromHtml } = require('./_lib/shared');
 let fetch;
 try { fetch = require('node-fetch'); } catch { /* Node 18 runtime may have global fetch */ }
 const cheerio = require('cheerio');
@@ -17,47 +17,57 @@ async function tryFetch(url, options = {}, timeoutMs = 4000) {
 async function scrapeMedia(url) {
   try {
     const resp = await tryFetch(url, { redirect: 'follow' });
-    if (!resp || !resp.ok) return [];
+    if (!resp || !resp.ok) return { videos: [], images: [] };
     const html = await resp.text();
     const $ = cheerio.load(html);
-    const vids = [];
-    const imgs = [];
-    // Meta players
+    const collectedImages = [];
+    const collectedVideos = [];
+
+    // OG / Twitter meta
+    $('meta[property="og:image"], meta[name="og:image"], meta[property="twitter:image"], meta[name="twitter:image"]').each((_, el) => {
+      const content = $(el).attr('content');
+      if (content) collectedImages.push(content);
+    });
     $('meta[property="og:video"], meta[property="og:video:secure_url"], meta[name="twitter:player"]').each((_, el) => {
       const v = $(el).attr('content');
-      if (v) vids.push(toEmbedFromUrl(v) || { kind: 'iframe', src: v });
+      if (v) {
+        const emb = toEmbedFromUrl(v) || { kind: 'iframe', src: v };
+        collectedVideos.push(emb);
+      }
     });
-    // Meta images
-    $('meta[property="og:image"], meta[name="og:image"], meta[property="twitter:image"]').each((_, el) => {
-      const i = $(el).attr('content');
-      if (i) imgs.push(i);
+
+    // Inline HTML media using shared extractor (captures imgs, iframes, video tags, sources, links, JSON-LD VideoObject)
+    const { images: htmlImgs, videos: htmlVids } = extractMediaFromHtml(html);
+    htmlImgs.forEach(i => collectedImages.push(i.src || i));
+    htmlVids.forEach(v => collectedVideos.push(v));
+
+    // Add thumbnails for YouTube/Vimeo if missing
+    collectedVideos.forEach(v => {
+      if (!v || !v.src || v.thumbnail) return;
+      if (/youtube\.com\/embed\//.test(v.src)) {
+        const id = v.src.split('/').pop();
+        v.thumbnail = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+      } else if (/player\.vimeo\.com\/video\//.test(v.src)) {
+        const id = v.src.split('/').pop();
+        v.thumbnail = `https://vumbnail.com/${id}.jpg`;
+      }
     });
-    // Iframes
-    $('iframe').each((_, el) => {
-      const v = $(el).attr('src');
-      if (v) vids.push(toEmbedFromUrl(v) || { kind: 'iframe', src: v });
-    });
-    // Video tags
-    $('video').each((_, el) => {
-      const v = $(el).attr('src');
-      if (v) vids.push(toEmbedFromUrl(v) || { kind: 'video', src: v });
-      $(el).find('source').each((__, se) => {
-        const s = $(se).attr('src');
-        const t = $(se).attr('type');
-        if (s) vids.push({ kind: 'video', src: s, type: t });
+
+    // Deduplicate
+    const dedupMedia = (arr, keyFn) => {
+      const seen = new Set();
+      return arr.filter(item => {
+        const key = keyFn(item);
+        if (!key || seen.has(key)) return false;
+        seen.add(key); return true;
       });
-    });
-    // Dedup by src
-    const seen = new Set();
-    const vOut = vids.filter(v => {
-      const key = typeof v === 'string' ? v : v.src;
-      if (!key || seen.has(key)) return false;
-      seen.add(key); return true;
-    });
-    const seenI = new Set();
-    const iOut = imgs.filter(u => { if (!u || seenI.has(u)) return false; seenI.add(u); return true; });
-    return { videos: vOut, images: iOut };
-  } catch {
+    };
+    const videos = dedupMedia(collectedVideos, v => v.src);
+    const images = dedupMedia(collectedImages, u => u);
+
+    return { videos, images };
+  } catch (e) {
+    console.warn('scrapeMedia failed for', url, e.message);
     return { videos: [], images: [] };
   }
 }
@@ -108,21 +118,50 @@ module.exports = async (req, res) => {
       };
     }));
 
-    // Lightweight video enrichment: try to detect videos for top items with none
-    // Limit to avoid latency; best effort only
-    const candidates = articles.slice(0, 12).filter(a => a.url && (!a.media || (!a.media.videos?.length || !a.urlToImage)));
-    await Promise.all(candidates.map(async (a) => {
-      const m = await scrapeMedia(a.url);
-      if (m.videos && m.videos.length) {
-        a.media = a.media || { images: [], videos: [] };
-        a.media.videos = m.videos;
+    // Aggressive enrichment: scrape ALL articles with controlled concurrency
+    const CONCURRENCY = 8;
+    const queue = [...articles];
+    const runners = Array.from({ length: CONCURRENCY }, () => (async () => {
+      while (queue.length) {
+        const a = queue.shift();
+        if (!a || !a.url) continue;
+        try {
+          const needsVideo = !a.media || !(a.media.videos && a.media.videos.length);
+          const needsImage = !a.urlToImage;
+          if (needsVideo || needsImage) {
+            const m = await scrapeMedia(a.url);
+            if (m.videos && m.videos.length) {
+              a.media = a.media || { images: [], videos: [] };
+              a.media.videos = m.videos;
+              // Promote first video thumbnail as card image if none
+              if (!a.urlToImage && m.videos[0].thumbnail) {
+                a.urlToImage = m.videos[0].thumbnail;
+              }
+            }
+            if ((!a.urlToImage || a.urlToImage === '') && m.images && m.images.length) {
+              a.urlToImage = m.images[0];
+            }
+            if (m.images && m.images.length) {
+              a.media = a.media || { images: [], videos: [] };
+              const existing = (a.media.images || []).map(i => i.src || i);
+              const merged = [...existing, ...m.images];
+              const seenImg = new Set();
+              a.media.images = merged.filter(u => { if (!u || seenImg.has(u)) return false; seenImg.add(u); return true; }).map(u => (typeof u === 'string' ? { src: u } : u));
+            }
+          }
+        } catch (enErr) {
+          console.warn('Enrichment error for', a.url, enErr.message);
+        }
       }
-      if ((!a.urlToImage || a.urlToImage === '') && m.images && m.images.length) {
-        a.urlToImage = m.images[0];
-        a.media = a.media || { images: [], videos: [] };
-        a.media.images = Array.from(new Set([...(a.media.images || []).map(i=>i.src||i), ...m.images])).map(u => (typeof u === 'string' ? { src: u } : u));
-      }
-    }));
+    })());
+    await Promise.all(runners);
+
+    // Sort: prioritize video articles first then preserve original relative ordering
+    articles.sort((a,b) => {
+      const av = (a.media?.videos?.length || 0) ? 1 : 0;
+      const bv = (b.media?.videos?.length || 0) ? 1 : 0;
+      if (av === bv) return 0; return bv - av; // videos first
+    });
 
     // Filter by search query
     if (query) {
