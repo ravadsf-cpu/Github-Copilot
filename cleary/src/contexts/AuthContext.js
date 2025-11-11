@@ -1,4 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
 
 const AuthContext = createContext();
 
@@ -9,59 +18,52 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate checking for existing session
-    const checkUser = () => {
-      const storedUser = localStorage.getItem('cleary_user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+          photoURL: firebaseUser.photoURL,
+          preferences: {
+            mood: 'balanced',
+            topics: ['technology', 'science', 'world'],
+            politicalLean: 'centrist'
+          }
+        });
+      } else {
+        setUser(null);
       }
       setLoading(false);
-    };
-    checkUser();
+    });
+
+    return unsubscribe;
   }, []);
 
   const login = async (email, password) => {
-    // Mock login - replace with Firebase auth
-    const mockUser = { 
-      id: '1', 
-      email, 
-      name: email.split('@')[0],
-      preferences: {
-        mood: 'balanced',
-        topics: ['technology', 'science', 'world'],
-        politicalLean: 'centrist'
-      }
-    };
-    setUser(mockUser);
-    localStorage.setItem('cleary_user', JSON.stringify(mockUser));
-    return mockUser;
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user;
+  };
+
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
   };
 
   const signup = async (email, password, name) => {
-    // Mock signup - replace with Firebase auth
-    const mockUser = { 
-      id: Date.now().toString(), 
-      email, 
-      name,
-      preferences: {
-        mood: 'balanced',
-        topics: [],
-        politicalLean: 'centrist'
-      }
-    };
-    setUser(mockUser);
-    localStorage.setItem('cleary_user', JSON.stringify(mockUser));
-    return mockUser;
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    return result.user;
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('cleary_user');
+    return signOut(auth);
   };
 
   const value = {
     user,
     login,
+    loginWithGoogle,
     signup,
     logout,
     loading
