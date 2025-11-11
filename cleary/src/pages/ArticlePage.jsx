@@ -22,6 +22,41 @@ const ArticlePage = () => {
         if (found) {
           setArticle(found);
           await postInteraction(found);
+          // If no videos present, try enriching from the source page
+          try {
+            if (!found.media || !found.media.videos || found.media.videos.length === 0) {
+              const enr = await fetch(`/api/article?url=${encodeURIComponent(found.url)}`);
+              if (enr.ok) {
+                const extra = await enr.json();
+                setArticle(prev => {
+                  if (!prev) return prev;
+                  const prevImages = prev.media?.images || [];
+                  const prevVideos = prev.media?.videos || [];
+                  const newImages = extra.media?.images || [];
+                  const newVideos = extra.media?.videos || [];
+                  // Dedup by src
+                  const dedup = (arr) => {
+                    const seen = new Set();
+                    return arr.filter(x => {
+                      const key = typeof x === 'string' ? x : x.src;
+                      if (!key || seen.has(key)) return false;
+                      seen.add(key); return true;
+                    });
+                  };
+                  return {
+                    ...prev,
+                    contentHtml: prev.contentHtml || extra.contentHtml || prev.contentHtml,
+                    media: {
+                      images: dedup([...(prevImages || []), ...(newImages || [])]),
+                      videos: dedup([...(prevVideos || []), ...(newVideos || [])]),
+                    }
+                  };
+                });
+              }
+            }
+          } catch (enrichErr) {
+            console.warn('Media enrichment failed', enrichErr);
+          }
         }
       } catch (e) {
         console.error('Failed to load article', e);
