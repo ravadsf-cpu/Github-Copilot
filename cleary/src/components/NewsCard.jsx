@@ -1,23 +1,58 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Clock, Bookmark, Share2, ExternalLink } from 'lucide-react';
+import { Clock, Bookmark, Share2, ExternalLink, Info } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { postInteraction } from '../utils/aiService';
 
 const NewsCard = ({ article, index }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showLeanTooltip, setShowLeanTooltip] = useState(false);
   const { trackArticleInteraction, setBackgroundMood } = useApp();
 
   const springConfig = { stiffness: 300, damping: 30 };
   const organicEase = [0.17, 0.67, 0.83, 0.67];
 
   const handleClick = async () => {
-    trackArticleInteraction(article, { type: 'read', readTime: 0 });
+    // Track with lean engagement for adaptive learning
+    const engagementData = {
+      type: 'read',
+      readTime: 0,
+      lean: article.lean,
+      leanScore: article.leanScore,
+      timestamp: Date.now()
+    };
+    trackArticleInteraction(article, engagementData);
     setBackgroundMood(article.mood);
+    
+    // Store click telemetry in localStorage for adaptive preference
+    try {
+      const clicks = JSON.parse(localStorage.getItem('leanClicks') || '[]');
+      clicks.push({
+        lean: article.lean,
+        score: article.leanScore,
+        time: Date.now()
+      });
+      // Keep last 100 clicks
+      localStorage.setItem('leanClicks', JSON.stringify(clicks.slice(-100)));
+    } catch {}
+    
     // Fire and forget interaction logging
     try { await postInteraction(article); } catch {}
   };
+
+  // Lean badge colors and labels
+  const leanConfig = {
+    'left': { color: 'from-blue-500 to-blue-600', bg: 'bg-blue-500/10', border: 'border-blue-400/50', text: 'text-blue-300', label: 'Left' },
+    'lean-left': { color: 'from-blue-400 to-cyan-500', bg: 'bg-blue-400/10', border: 'border-blue-300/50', text: 'text-blue-200', label: 'Lean Left' },
+    'center': { color: 'from-gray-400 to-gray-500', bg: 'bg-gray-400/10', border: 'border-gray-400/50', text: 'text-gray-300', label: 'Center' },
+    'lean-right': { color: 'from-red-400 to-orange-500', bg: 'bg-red-400/10', border: 'border-red-300/50', text: 'text-red-200', label: 'Lean Right' },
+    'right': { color: 'from-red-500 to-red-600', bg: 'bg-red-500/10', border: 'border-red-400/50', text: 'text-red-300', label: 'Right' },
+  };
+  const lean = article.lean || 'center';
+  const leanStyle = leanConfig[lean] || leanConfig.center;
+  const leanScore = typeof article.leanScore === 'number' ? article.leanScore : 0;
+  const confidence = Math.abs(leanScore) * 100;
 
   return (
     <motion.article
@@ -65,6 +100,57 @@ const NewsCard = ({ article, index }) => {
                 {article.bias}
               </div>
             )}
+
+            {/* Lean badge with hover tooltip */}
+            <div 
+              className="absolute bottom-2 left-2 relative"
+              onMouseEnter={() => setShowLeanTooltip(true)}
+              onMouseLeave={() => setShowLeanTooltip(false)}
+            >
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${leanStyle.bg} backdrop-blur-sm border ${leanStyle.border}`}
+              >
+                <div className={`w-2 h-2 rounded-full bg-gradient-to-br ${leanStyle.color} animate-pulse`} />
+                <span className={`text-xs font-semibold ${leanStyle.text}`}>{leanStyle.label}</span>
+                <Info className={`w-3 h-3 ${leanStyle.text}`} />
+              </motion.div>
+
+              {/* Tooltip with reasons */}
+              <AnimatePresence>
+                {showLeanTooltip && article.leanReasons && article.leanReasons.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute bottom-full left-0 mb-2 w-64 p-3 rounded-lg bg-slate-900/95 backdrop-blur-xl border border-white/20 shadow-2xl z-50"
+                  >
+                    <div className="text-xs font-semibold text-white mb-2 flex items-center justify-between">
+                      <span>Lean Analysis</span>
+                      <span className={`text-xs ${leanStyle.text}`}>{confidence.toFixed(0)}% confidence</span>
+                    </div>
+                    <div className="space-y-1 text-[10px] text-gray-300 max-h-32 overflow-y-auto">
+                      {article.leanReasons.slice(0, 5).map((reason, i) => (
+                        <div key={i} className="flex items-start gap-1.5">
+                          <span className="text-purple-400 mt-0.5">•</span>
+                          <span>{reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Confidence bar */}
+                    <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${confidence}%` }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                        className={`h-full bg-gradient-to-r ${leanStyle.color}`}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Media badges */}
             {(article.media?.images?.length || article.media?.videos?.length) && (

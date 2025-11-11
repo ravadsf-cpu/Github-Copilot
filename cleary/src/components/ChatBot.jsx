@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, X, Sparkles } from 'lucide-react';
+import { MessageCircle, Send, X, Sparkles, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useApp } from '../contexts/AppContext';
 
 const API_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001';
 
-export default function ChatBot({ politicalLean, interests, preference }) {
+export default function ChatBot({ politicalLean, interests, preference: propPreference }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const { userPreferences, setUserPreferences } = useApp();
+  const [localPreference, setLocalPreference] = useState(propPreference || userPreferences?.politicalBalance || 'balanced');
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -27,6 +31,15 @@ export default function ChatBot({ politicalLean, interests, preference }) {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    setLocalPreference(propPreference || userPreferences?.politicalBalance || 'balanced');
+  }, [propPreference, userPreferences?.politicalBalance]);
+
+  const handlePreferenceChange = (pref) => {
+    setLocalPreference(pref);
+    setUserPreferences({ ...userPreferences, politicalBalance: pref });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -44,7 +57,7 @@ export default function ChatBot({ politicalLean, interests, preference }) {
           message: userMessage,
           politicalLean,
           interests,
-          preference
+          preference: localPreference
         })
       });
 
@@ -103,13 +116,64 @@ export default function ChatBot({ politicalLean, interests, preference }) {
                 <Sparkles className="w-5 h-5" />
                 <span className="font-semibold">News Assistant</span>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="hover:bg-white/20 rounded-full p-1 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="hover:bg-white/20 rounded-full p-1.5 transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                </motion.button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="hover:bg-white/20 rounded-full p-1 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
+
+            {/* Settings panel */}
+            <AnimatePresence>
+              {showSettings && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-slate-800/50 border-b border-purple-500/30 overflow-hidden"
+                >
+                  <div className="p-4 space-y-3">
+                    <div className="text-xs font-semibold text-slate-300 mb-2">Personalization Mode</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['reinforce', 'balanced', 'challenge'].map((mode) => (
+                        <motion.button
+                          key={mode}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handlePreferenceChange(mode)}
+                          className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                            localPreference === mode
+                              ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/50'
+                              : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          {mode === 'reinforce' && '🎯 Reinforce'}
+                          {mode === 'balanced' && '⚖️ Balanced'}
+                          {mode === 'challenge' && '🔄 Challenge'}
+                        </motion.button>
+                      ))}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-2">
+                      {localPreference === 'reinforce' && 'Prioritize sources aligned with your views'}
+                      {localPreference === 'balanced' && 'Show diverse perspectives equally'}
+                      {localPreference === 'challenge' && 'Show viewpoints that challenge yours'}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
