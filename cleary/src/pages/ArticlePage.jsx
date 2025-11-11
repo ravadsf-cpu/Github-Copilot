@@ -260,9 +260,59 @@ const ArticlePage = () => {
                 {article.media.videos.slice(0, 4).map((vid, idx) => {
                   const videoSrc = typeof vid === 'string' ? vid : vid.src;
                   const videoKind = typeof vid === 'object' ? vid.kind : 'iframe';
-                  return (
-                    <div key={idx} className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                      {videoKind === 'iframe' ? (
+                  // Custom video player for direct video files
+                  if (videoKind === 'video' && videoSrc) {
+                    return (
+                      <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10">
+                        <video
+                          controls
+                          className="w-full h-auto bg-black rounded-xl"
+                          src={videoSrc}
+                          type={vid.type || 'video/mp4'}
+                          preload="metadata"
+                          style={{ maxHeight: '480px' }}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                        {/* Custom controls: playback speed, volume, fullscreen */}
+                        <div className="absolute bottom-2 right-2 flex gap-2 items-center bg-black/60 rounded-lg px-3 py-1">
+                          <label className="text-xs text-white">Speed
+                            <select className="ml-1 bg-gray-800 text-white rounded px-1 py-0.5 text-xs" onChange={e => {
+                              const v = e.target.closest('div').previousSibling;
+                              if (v && v.tagName === 'VIDEO') v.playbackRate = parseFloat(e.target.value);
+                            }}>
+                              <option value="0.5">0.5x</option>
+                              <option value="0.75">0.75x</option>
+                              <option value="1" selected>1x</option>
+                              <option value="1.25">1.25x</option>
+                              <option value="1.5">1.5x</option>
+                              <option value="2">2x</option>
+                            </select>
+                          </label>
+                          <button className="text-xs text-white px-2 py-1 rounded bg-purple-600/80 hover:bg-purple-700" onClick={e => {
+                            const v = e.target.closest('div').previousSibling;
+                            if (v && v.tagName === 'VIDEO') {
+                              if (v.requestFullscreen) v.requestFullscreen();
+                              else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+                            }
+                          }}>Fullscreen</button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Iframe videos (YouTube/Vimeo)
+                  if (videoKind === 'iframe' && videoSrc) {
+                    // Try to show a preview thumbnail for YouTube
+                    let thumb = null;
+                    if (/youtube\.com|youtu\.be/.test(videoSrc)) {
+                      const match = videoSrc.match(/embed\/([\w-]{6,})/);
+                      if (match) thumb = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+                    }
+                    return (
+                      <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10" style={{ minHeight: '240px' }}>
+                        {thumb && (
+                          <img src={thumb} alt="Video preview" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                        )}
                         <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                           <iframe
                             src={videoSrc}
@@ -271,19 +321,21 @@ const ArticlePage = () => {
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             loading="lazy"
+                            style={{ background: thumb ? 'transparent' : '#000' }}
                           />
                         </div>
-                      ) : (
-                        <video
-                          controls
-                          className="w-full h-auto"
-                          src={videoSrc}
-                          type={vid.type || 'video/mp4'}
-                          preload="metadata"
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      )}
+                        {/* Fallback/error message if blocked */}
+                        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs rounded px-2 py-1">
+                          If video doesn't play, open in YouTube/Vimeo.
+                        </div>
+                        <a href={videoSrc} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 px-2 py-1 rounded bg-purple-600/80 text-white text-xs hover:bg-purple-700">Open in new tab</a>
+                      </div>
+                    );
+                  }
+                  // Unknown type fallback
+                  return (
+                    <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center min-h-[240px]">
+                      <span className="text-white text-xs">Video format not supported</span>
                     </div>
                   );
                 })}
