@@ -118,7 +118,7 @@ export default function ChatBot({ politicalLean, interests }) {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                    className={`max-w-[80%] rounded-2xl px-4 py-2 whitespace-pre-wrap break-words ${
                       msg.role === 'user'
                         ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
                         : 'bg-slate-800 text-slate-200'
