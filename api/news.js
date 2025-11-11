@@ -14,17 +14,23 @@ async function tryFetch(url, options = {}, timeoutMs = 4000) {
   }
 }
 
-async function scrapeVideos(url) {
+async function scrapeMedia(url) {
   try {
     const resp = await tryFetch(url, { redirect: 'follow' });
     if (!resp || !resp.ok) return [];
     const html = await resp.text();
     const $ = cheerio.load(html);
     const vids = [];
+    const imgs = [];
     // Meta players
     $('meta[property="og:video"], meta[property="og:video:secure_url"], meta[name="twitter:player"]').each((_, el) => {
       const v = $(el).attr('content');
       if (v) vids.push(toEmbedFromUrl(v) || { kind: 'iframe', src: v });
+    });
+    // Meta images
+    $('meta[property="og:image"], meta[name="og:image"], meta[property="twitter:image"]').each((_, el) => {
+      const i = $(el).attr('content');
+      if (i) imgs.push(i);
     });
     // Iframes
     $('iframe').each((_, el) => {
@@ -43,13 +49,16 @@ async function scrapeVideos(url) {
     });
     // Dedup by src
     const seen = new Set();
-    return vids.filter(v => {
+    const vOut = vids.filter(v => {
       const key = typeof v === 'string' ? v : v.src;
       if (!key || seen.has(key)) return false;
       seen.add(key); return true;
     });
+    const seenI = new Set();
+    const iOut = imgs.filter(u => { if (!u || seenI.has(u)) return false; seenI.add(u); return true; });
+    return { videos: vOut, images: iOut };
   } catch {
-    return [];
+    return { videos: [], images: [] };
   }
 }
 
@@ -100,12 +109,17 @@ module.exports = async (req, res) => {
 
     // Lightweight video enrichment: try to detect videos for top items with none
     // Limit to avoid latency; best effort only
-    const candidates = articles.slice(0, 12).filter(a => !(a.media && a.media.videos && a.media.videos.length > 0) && a.url);
+    const candidates = articles.slice(0, 12).filter(a => a.url && (!a.media || (!a.media.videos?.length || !a.urlToImage)));
     await Promise.all(candidates.map(async (a) => {
-      const vids = await scrapeVideos(a.url);
-      if (vids && vids.length) {
+      const m = await scrapeMedia(a.url);
+      if (m.videos && m.videos.length) {
         a.media = a.media || { images: [], videos: [] };
-        a.media.videos = vids;
+        a.media.videos = m.videos;
+      }
+      if ((!a.urlToImage || a.urlToImage === '') && m.images && m.images.length) {
+        a.urlToImage = m.images[0];
+        a.media = a.media || { images: [], videos: [] };
+        a.media.images = Array.from(new Set([...(a.media.images || []).map(i=>i.src||i), ...m.images])).map(u => (typeof u === 'string' ? { src: u } : u));
       }
     }));
 

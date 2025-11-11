@@ -24,7 +24,9 @@ const ArticlePage = () => {
           await postInteraction(found);
           // If no videos present, try enriching from the source page
           try {
-            if (!found.media || !found.media.videos || found.media.videos.length === 0) {
+            const missingVideos = !found.media || !found.media.videos || found.media.videos.length === 0;
+            const missingImage = !(found.urlToImage || found.image || (found.media && found.media.images && found.media.images.length > 0));
+            if (missingVideos || missingImage) {
               const enr = await fetch(`/api/article?url=${encodeURIComponent(found.url)}`);
               if (enr.ok) {
                 const extra = await enr.json();
@@ -45,6 +47,7 @@ const ArticlePage = () => {
                   };
                   return {
                     ...prev,
+                    urlToImage: prev.urlToImage || newImages[0]?.src || prev.urlToImage,
                     contentHtml: prev.contentHtml || extra.contentHtml || prev.contentHtml,
                     media: {
                       images: dedup([...(prevImages || []), ...(newImages || [])]),

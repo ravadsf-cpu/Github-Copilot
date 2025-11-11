@@ -3,7 +3,17 @@ const Parser = require('rss-parser');
 const sanitizeHtml = require('sanitize-html');
 
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
-const rssParser = new Parser();
+const rssParser = new Parser({
+  customFields: {
+    item: [
+      'content:encoded',
+      'media:content',
+      'media:thumbnail',
+      'media:group',
+      'media:player',
+    ]
+  }
+});
 
 const RSS_FEEDS = {
   breaking: [
@@ -146,6 +156,21 @@ const extractMediaFromHtml = (html) => {
   return { images, videos };
 };
 
+// Helper to probe URL-like values from various shapes
+function getUrlish(v) {
+  if (!v) return null;
+  if (typeof v === 'string') return v;
+  if (typeof v === 'object') {
+    return (
+      v.url || v.href || v.src || v.link ||
+      (v.$ && (v.$.url || v.$.href || v.$.src)) ||
+      v['@_url'] || v['@_href'] || v['@_src'] ||
+      null
+    );
+  }
+  return null;
+}
+
 async function fetchFromRSS(category = 'breaking') {
   const feeds = RSS_FEEDS[category] || RSS_FEEDS.breaking;
   const allArticles = [];
@@ -158,24 +183,34 @@ async function fetchFromRSS(category = 'breaking') {
         
         // Extract media BEFORE sanitizing to preserve img/iframe tags
         const { images: htmlImages, videos: htmlVideos } = extractMediaFromHtml(fullContent);
+        const images = [...htmlImages];
         const videos = [...htmlVideos];
         // Enclosure video support
         if (item.enclosure?.url && /video/i.test(item.enclosure.type || '')) {
           videos.push({ kind: 'video', src: item.enclosure.url, type: item.enclosure.type });
         }
+        // Enclosure image support
+        if (item.enclosure?.url && /image/i.test(item.enclosure.type || '')) {
+          images.push({ src: item.enclosure.url });
+        }
         // media:content variants from RSS
         const mediaContent = item['media:content'] || item['media:group']?.['media:content'];
         const mcArr = Array.isArray(mediaContent) ? mediaContent : (mediaContent ? [mediaContent] : []);
         mcArr.forEach(mc => {
-          const url = mc?.url;
-          const type = mc?.type || mc?.medium;
+          const url = getUrlish(mc);
+          const type = (typeof mc === 'object') ? (mc.type || mc.medium) : '';
           if (url && (/video/i.test(type || '') || /\.(mp4|webm|ogg)(\?.*)?$/i.test(url))) {
             videos.push({ kind: 'video', src: url, type: type?.startsWith('video/') ? type : undefined });
+          } else if (url && (/image/i.test(type || '') || /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url))) {
+            images.push({ src: url });
           } else if (url) {
             const emb = toEmbedFromUrl(url);
             if (emb) videos.push(emb);
           }
         });
+        // media:thumbnail
+        const thumbUrl = getUrlish(item['media:thumbnail']) || getUrlish(item['media:group']?.['media:thumbnail']);
+        if (thumbUrl) images.push({ src: thumbUrl });
         
         // Now sanitize for display
         const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
@@ -185,12 +220,12 @@ async function fetchFromRSS(category = 'breaking') {
           title: item.title,
           description: item.contentSnippet || stripHtml(item.description) || '',
           url: item.link,
-          urlToImage: item.enclosure?.url || htmlImages[0]?.src || '',
+          urlToImage: (/image/i.test(item.enclosure?.type || '') ? item.enclosure?.url : '') || images[0]?.src || item.enclosure?.url || '',
           source: { name: feed.title || 'RSS Feed' },
           publishedAt: item.pubDate || new Date().toISOString(),
           content: cleanContent || item.contentSnippet || '',
           contentHtml,
-          media: { images: htmlImages, videos },
+          media: { images, videos },
         };
       });
       allArticles.push(...articles);
@@ -212,22 +247,30 @@ async function fetchFromFeeds(feedUrls = []) {
         
         // Extract media BEFORE sanitizing to preserve img/iframe tags
         const { images: htmlImages, videos: htmlVideos } = extractMediaFromHtml(fullContent);
+        const images = [...htmlImages];
         const videos = [...htmlVideos];
         if (item.enclosure?.url && /video/i.test(item.enclosure.type || '')) {
           videos.push({ kind: 'video', src: item.enclosure.url, type: item.enclosure.type });
         }
+        if (item.enclosure?.url && /image/i.test(item.enclosure.type || '')) {
+          images.push({ src: item.enclosure.url });
+        }
         const mediaContent = item['media:content'] || item['media:group']?.['media:content'];
         const mcArr = Array.isArray(mediaContent) ? mediaContent : (mediaContent ? [mediaContent] : []);
         mcArr.forEach(mc => {
-          const url = mc?.url;
-          const type = mc?.type || mc?.medium;
+          const url = getUrlish(mc);
+          const type = (typeof mc === 'object') ? (mc.type || mc.medium) : '';
           if (url && (/video/i.test(type || '') || /\.(mp4|webm|ogg)(\?.*)?$/i.test(url))) {
             videos.push({ kind: 'video', src: url, type: type?.startsWith('video/') ? type : undefined });
+          } else if (url && (/image/i.test(type || '') || /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url))) {
+            images.push({ src: url });
           } else if (url) {
             const emb = toEmbedFromUrl(url);
             if (emb) videos.push(emb);
           }
         });
+        const thumbUrl2 = getUrlish(item['media:thumbnail']) || getUrlish(item['media:group']?.['media:thumbnail']);
+        if (thumbUrl2) images.push({ src: thumbUrl2 });
         
         // Now sanitize for display
         const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
@@ -237,12 +280,12 @@ async function fetchFromFeeds(feedUrls = []) {
           title: item.title,
           description: item.contentSnippet || stripHtml(item.description) || '',
           url: item.link,
-          urlToImage: item.enclosure?.url || htmlImages[0]?.src || '',
+          urlToImage: (/image/i.test(item.enclosure?.type || '') ? item.enclosure?.url : '') || images[0]?.src || item.enclosure?.url || '',
           source: { name: feed.title || 'RSS Feed' },
           publishedAt: item.pubDate || new Date().toISOString(),
           content: cleanContent || item.contentSnippet || '',
           contentHtml,
-          media: { images: htmlImages, videos },
+          media: { images, videos },
         };
       });
       allArticles.push(...articles);
