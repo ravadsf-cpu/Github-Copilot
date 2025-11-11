@@ -1,4 +1,9 @@
-const { genAI } = require('./_lib/shared');
+const { genAI, fetchFromRSS } = require('./_lib/shared');
+let OpenAIClient = null;
+try {
+  // Lazy require to avoid bundling if not used
+  OpenAIClient = require('openai');
+} catch {}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -16,54 +21,65 @@ module.exports = async (req, res) => {
 
   try {
     const { message, context } = req.body;
-
-    // Debug logging
-    console.log('Chat request received:', { message, hasApiKey: !!process.env.GEMINI_API_KEY });
-
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(200).json({ 
-        response: "AI chat is currently unavailable. API key not configured." 
-      });
-    }
-
-    if (!genAI) {
-      return res.status(200).json({ 
-        response: "AI chat initialization failed. Please contact support." 
-      });
-    }
-
-    try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      
-      const prompt = context 
-        ? `You are a helpful news assistant. Context: ${context}\n\nUser: ${message}\n\nAssistant:`
-        : `You are a helpful news assistant. User: ${message}\n\nAssistant:`;
-
-      console.log('Calling Gemini API...');
-      const result = await model.generateContent(prompt);
-      const response = result.response.text();
-      console.log('Gemini response received');
-
-      return res.status(200).json({ response });
-    } catch (aiError) {
-      // Fallback to basic responses if AI fails
-      console.error('AI error:', aiError.message);
-      
-      const msg = message.toLowerCase();
-      let fallbackResponse = '';
-      
-      if (msg.includes('hello') || msg.includes('hi')) {
-        fallbackResponse = "Hello! I'm your news assistant. I can help you understand the latest news. What would you like to know?";
-      } else if (msg.includes('news') || msg.includes('article')) {
-        fallbackResponse = "I can see the latest news articles on your feed. Try browsing through them by category or use the personalization features to get content tailored to your interests.";
-      } else if (msg.includes('help')) {
-        fallbackResponse = "I can help you navigate the news feed, explain articles, and find specific topics. You can also use the personalization settings to customize your news experience.";
-      } else {
-        fallbackResponse = "I'm here to help! Try asking me about the news articles, specific topics, or how to use the personalization features. (Note: Full AI chat requires API key update)";
+    // Prefer OpenAI if available
+    if (process.env.OPENAI_API_KEY && OpenAIClient) {
+      try {
+        const openai = new OpenAIClient({ apiKey: process.env.OPENAI_API_KEY });
+        const system = "You are a concise, trustworthy news assistant. Be direct. Use bullet points when listing headlines.";
+        const user = context ? `${context}\n\nUser: ${message}` : message;
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user }
+          ],
+          temperature: 0.3,
+          max_tokens: 300
+        });
+        const response = completion.choices?.[0]?.message?.content?.trim() || "";
+        if (response) return res.status(200).json({ response });
+      } catch (e) {
+        console.error('OpenAI chat error:', e.message);
+        // fall through to Gemini or heuristic fallback
       }
-      
-      return res.status(200).json({ response: fallbackResponse });
     }
+
+    // Next try Gemini if configured
+    if (process.env.GEMINI_API_KEY && genAI) {
+      try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const prompt = context 
+          ? `You are a helpful news assistant. Context: ${context}\n\nUser: ${message}\n\nAssistant:`
+          : `You are a helpful news assistant. User: ${message}\n\nAssistant:`;
+        const result = await model.generateContent(prompt);
+        const response = result.response.text();
+        if (response) return res.status(200).json({ response });
+      } catch (e) {
+        console.error('Gemini chat error:', e.message);
+      }
+    }
+
+    // Heuristic fallback: return live headlines based on intent
+    const msg = (message || '').toLowerCase();
+    const categories = ['politics', 'health', 'science'];
+    let category = 'breaking';
+    for (const c of categories) {
+      if (msg.includes(c)) { category = c; break; }
+    }
+    if (msg.includes('tech') || msg.includes('technology')) category = 'science';
+
+    const articles = await fetchFromRSS(category);
+    const top = articles.slice(0, 5);
+    if (top.length) {
+      const bullets = top.map((a, i) => `${i+1}. ${a.title} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
+      const header = category === 'breaking' ? 'Top breaking stories:' : `Top ${category} stories:`;
+      return res.status(200).json({ response: `${header}\n\n${bullets}` });
+    }
+
+    // Last resort generic
+    return res.status(200).json({ 
+      response: "I'm here to help! Try asking for 'breaking news' or a category like technology, politics, or health."
+    });
   } catch (error) {
     console.error('Chat API error:', error.message, error.stack);
     res.status(200).json({ 
