@@ -101,7 +101,7 @@ async function fetchFromRSS(category = 'breaking') {
 async function summarizeWithAI(text, maxLength = 160) {
   if (!genAI || !text) return text.slice(0, maxLength);
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `Summarize this news article in ${maxLength} characters or less:\n\n${text}`;
     const result = await model.generateContent(prompt);
     return result.response.text().slice(0, maxLength);
@@ -113,7 +113,7 @@ async function summarizeWithAI(text, maxLength = 160) {
 async function detectCategory(title, description) {
   if (!genAI) return 'general';
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `Categorize this news article into ONE of these: politics, health, science, technology, business, world, sports. Title: ${title}. Description: ${description}. Return ONLY the category name.`;
     const result = await model.generateContent(prompt);
     const cat = result.response.text().trim().toLowerCase();

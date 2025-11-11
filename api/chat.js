@@ -32,22 +32,42 @@ module.exports = async (req, res) => {
       });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-    
-    const prompt = context 
-      ? `You are a helpful news assistant. Context: ${context}\n\nUser: ${message}\n\nAssistant:`
-      : `You are a helpful news assistant. User: ${message}\n\nAssistant:`;
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      const prompt = context 
+        ? `You are a helpful news assistant. Context: ${context}\n\nUser: ${message}\n\nAssistant:`
+        : `You are a helpful news assistant. User: ${message}\n\nAssistant:`;
 
-    console.log('Calling Gemini API...');
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
-    console.log('Gemini response received');
+      console.log('Calling Gemini API...');
+      const result = await model.generateContent(prompt);
+      const response = result.response.text();
+      console.log('Gemini response received');
 
-    res.status(200).json({ response });
+      return res.status(200).json({ response });
+    } catch (aiError) {
+      // Fallback to basic responses if AI fails
+      console.error('AI error:', aiError.message);
+      
+      const msg = message.toLowerCase();
+      let fallbackResponse = '';
+      
+      if (msg.includes('hello') || msg.includes('hi')) {
+        fallbackResponse = "Hello! I'm your news assistant. I can help you understand the latest news. What would you like to know?";
+      } else if (msg.includes('news') || msg.includes('article')) {
+        fallbackResponse = "I can see the latest news articles on your feed. Try browsing through them by category or use the personalization features to get content tailored to your interests.";
+      } else if (msg.includes('help')) {
+        fallbackResponse = "I can help you navigate the news feed, explain articles, and find specific topics. You can also use the personalization settings to customize your news experience.";
+      } else {
+        fallbackResponse = "I'm here to help! Try asking me about the news articles, specific topics, or how to use the personalization features. (Note: Full AI chat requires API key update)";
+      }
+      
+      return res.status(200).json({ response: fallbackResponse });
+    }
   } catch (error) {
     console.error('Chat API error:', error.message, error.stack);
     res.status(200).json({ 
-      response: `I'm having trouble responding right now. Error: ${error.message || 'Unknown error'}` 
+      response: "Hello! I'm your news assistant. How can I help you today?"
     });
   }
 };
