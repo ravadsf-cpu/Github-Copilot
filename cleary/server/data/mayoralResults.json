@@ -1,0 +1,55 @@
+{
+  "type": "mayoral",
+  "race": "Major City Elections 2025",
+  "cities": {
+    "New York": {
+      "candidates": {
+        "democrat": "Zohra Mamdani",
+        "independent": "Andrew Cuomo",
+        "republican": "Curtis Sliwa"
+      },
+      "districts": {
+        "Manhattan": {
+          "democrat": { "votes": 260000, "candidate": "Zohra Mamdani" },
+          "independent": { "votes": 210000, "candidate": "Andrew Cuomo" },
+          "republican": { "votes": 45000, "candidate": "Curtis Sliwa" },
+          "called": true,
+          "reporting": 93,
+          "winner": "democrat"
+        },
+        "Brooklyn": {
+          "democrat": { "votes": 320000, "candidate": "Zohra Mamdani" },
+          "independent": { "votes": 250000, "candidate": "Andrew Cuomo" },
+          "republican": { "votes": 38000, "candidate": "Curtis Sliwa" },
+          "called": true,
+          "reporting": 92,
+          "winner": "democrat"
+        },
+        "Queens": {
+          "democrat": { "votes": 230000, "candidate": "Zohra Mamdani" },
+          "independent": { "votes": 210000, "candidate": "Andrew Cuomo" },
+          "republican": { "votes": 62000, "candidate": "Curtis Sliwa" },
+          "called": true,
+          "reporting": 90,
+          "winner": "democrat"
+        },
+        "Bronx": {
+          "democrat": { "votes": 180000, "candidate": "Zohra Mamdani" },
+          "independent": { "votes": 120000, "candidate": "Andrew Cuomo" },
+          "republican": { "votes": 30000, "candidate": "Curtis Sliwa" },
+          "called": true,
+          "reporting": 95,
+          "winner": "democrat"
+        },
+        "Staten Island": {
+          "independent": { "votes": 82000, "candidate": "Andrew Cuomo" },
+          "republican": { "votes": 67000, "candidate": "Curtis Sliwa" },
+          "democrat": { "votes": 33820, "candidate": "Zohra Mamdani" },
+          "called": true,
+          "reporting": 94,
+          "winner": "independent"
+        }
+      }
+    }
+  }
+}
