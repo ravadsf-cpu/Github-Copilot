@@ -335,7 +335,7 @@ const FeedPage = () => {
       </main>
       
       {/* AI ChatBot */}
-      <ChatBot politicalLean={lean} interests={[currentMood]} />
+  <ChatBot politicalLean={lean} interests={[currentMood]} preference={userPreferences?.politicalBalance || 'balanced'} />
     </AnimatedBackground>
   );
 };

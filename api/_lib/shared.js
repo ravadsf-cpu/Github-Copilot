@@ -194,6 +194,104 @@ function inferLean(source) {
   return 'center';
 }
 
+// Expanded source bias map (-2 strong left, -1 lean left, 0 center, 1 lean right, 2 strong right)
+const SOURCE_BIAS = new Map([
+  // Strong left
+  ['jacobin', -2], ['mother jones', -2], ['the nation', -2],
+  // Lean left
+  ['nytimes', -1], ['new york times', -1], ['guardian', -1], ['washington post', -1], ['vox', -1], ['msnbc', -1], ['huffpost', -1],
+  // Center
+  ['reuters', 0], ['ap news', 0], ['associated press', 0], ['bbc', 0], ['npr', 0],
+  // Lean right
+  ['wall street journal', 1], ['wsj', 1], ['financial times', 1], ['the economist', 1], ['telegraph', 1], ['new york post', 1],
+  // Strong right
+  ['fox', 2], ['breitbart', 2], ['newsmax', 2], ['daily caller', 2], ['dailywire', 2]
+]);
+
+const RIGHT_KEYWORDS = [
+  'border security','illegal immigration','build the wall','second amendment','pro-life','anti-abortion','tax cuts','deregulation','small government','law and order','back the blue','strong on crime','woke','critical race theory','energy independence','drill baby drill','lower taxes','free market','fiscal conservative','school choice','voter id','election integrity'
+];
+const LEFT_KEYWORDS = [
+  'climate crisis','renewable energy','reproductive rights','abortion rights','gun control','common sense gun laws','universal healthcare','medicare for all','living wage','labor union','wealth tax','racial justice','police reform','criminal justice reform','student debt relief','paid family leave','voting rights','lgbtq rights','trans rights','equity','dei'
+];
+
+const RIGHT_ENTITIES = ['republican','gop','conservative','trump','desantis','mccarthy','mitch mcconnell','ted cruz'];
+const LEFT_ENTITIES = ['democrat','progressive','biden','harris','pelosi','schumer','ocasio-cortez','aoc','bernie sanders'];
+
+function negated(text, idx, window = 5) {
+  // crude negation: look back a few tokens for negators
+  const tokens = text.toLowerCase().split(/\s+/);
+  const start = Math.max(0, idx - window);
+  const slice = tokens.slice(start, idx).join(' ');
+  return /(not|isn\'t|wasn\'t|aren\'t|no|without|lack of|criticize|condemn|oppose|against)/.test(slice);
+}
+
+function scoreLean(text = '', source = '', url = '') {
+  const reasons = [];
+  let score = 0; // negative left, positive right
+
+  // Source/domain weighting
+  const src = (source || '').toLowerCase();
+  let sourceKey = '';
+  for (const key of SOURCE_BIAS.keys()) {
+    if (src.includes(key)) { sourceKey = key; break; }
+  }
+  if (!sourceKey && url) {
+    try {
+      const host = new URL(url).hostname.replace(/^www\./,'');
+      const hostKey = Array.from(SOURCE_BIAS.keys()).find(k => host.includes(k.replace(/\s+/g,'')));
+      if (hostKey) sourceKey = hostKey;
+    } catch {}
+  }
+  if (sourceKey) {
+    const s = SOURCE_BIAS.get(sourceKey) || 0;
+    score += s * 1.0; // modest weight for source
+    reasons.push(`Source bias: ${sourceKey} (${s})`);
+  }
+
+  const lower = (text || '').toLowerCase();
+  const tokens = lower.split(/\s+/);
+
+  // Keyword scoring
+  RIGHT_KEYWORDS.forEach(kw => {
+    if (lower.includes(kw)) {
+      // Find first occurrence for negation check
+      const firstWord = kw.split(' ')[0];
+      const idx = tokens.indexOf(firstWord);
+      if (idx >= 0 && !negated(lower, idx)) {
+        score += 0.8;
+        reasons.push(`Right keyword: ${kw}`);
+      }
+    }
+  });
+  LEFT_KEYWORDS.forEach(kw => {
+    if (lower.includes(kw)) {
+      const firstWord = kw.split(' ')[0];
+      const idx = tokens.indexOf(firstWord);
+      if (idx >= 0 && !negated(lower, idx)) {
+        score -= 0.8;
+        reasons.push(`Left keyword: ${kw}`);
+      }
+    }
+  });
+
+  // Entity hints (lighter weight)
+  RIGHT_ENTITIES.forEach(n => { if (lower.includes(n)) { score += 0.3; reasons.push(`Right entity: ${n}`); } });
+  LEFT_ENTITIES.forEach(n => { if (lower.includes(n)) { score -= 0.3; reasons.push(`Left entity: ${n}`); } });
+
+  // Clamp and label
+  if (score > 3) score = 3;
+  if (score < -3) score = -3;
+  const norm = score / 3; // -1..1
+  let label = 'center';
+  if (norm <= -0.66) label = 'left';
+  else if (norm < -0.2) label = 'lean-left';
+  else if (norm > 0.66) label = 'right';
+  else if (norm > 0.2) label = 'lean-right';
+
+  return { score: Number(norm.toFixed(3)), label, reasons };
+}
+
 module.exports = {
   genAI,
   rssParser,
@@ -202,6 +300,7 @@ module.exports = {
   summarizeWithAI,
   detectCategory,
   inferLean,
+  scoreLean,
   stripHtml,
   REGIONAL_FEEDS,
 };

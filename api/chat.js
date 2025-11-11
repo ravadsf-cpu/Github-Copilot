@@ -1,4 +1,4 @@
-const { genAI, fetchFromRSS, fetchFromFeeds, REGIONAL_FEEDS, stripHtml } = require('./_lib/shared');
+const { genAI, fetchFromRSS, fetchFromFeeds, REGIONAL_FEEDS, stripHtml, scoreLean } = require('./_lib/shared');
 let OpenAIClient = null;
 try {
   // Lazy require to avoid bundling if not used
@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { message, context } = req.body;
+  const { message, context, politicalLean, preference } = req.body;
     // Prefer OpenAI if available
     if (process.env.OPENAI_API_KEY && OpenAIClient) {
       try {
@@ -149,9 +149,27 @@ module.exports = async (req, res) => {
       }
 
       if (filled.length) {
+        // Stronger personalization: reorder by preference and politicalLean if provided
+        const norm = (l) => ({ 'left': -1, 'lean-left': -0.5, 'center': 0, 'lean-right': 0.5, 'right': 1 }[l] ?? 0);
+        const desired = typeof politicalLean === 'string' ? norm(politicalLean) : null;
+        const items = filled.map(a => {
+          const leanEval = scoreLean(`${a.title || ''}. ${a.description || ''} ${a.content || ''}`, a.source?.name || '', a.url || '');
+          return { ...a, _lean: leanEval };
+        });
+
+        let ordered = items;
+        if (preference === 'reinforce' && desired !== null) {
+          ordered = items.sort((x,y) => Math.abs(norm(y._lean.label) - desired) - Math.abs(norm(x._lean.label) - desired));
+        } else if (preference === 'challenge' && desired !== null) {
+          ordered = items.sort((x,y) => Math.abs(norm(x._lean.label) - desired) - Math.abs(norm(y._lean.label) - desired));
+        }
+
         const header = pickHeader() || 'Top world stories:';
-        const bullets = filled.slice(0,5).map((a, i) => `${i+1}. ${a.title} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
-        return res.status(200).json({ response: `${header}\n\n${bullets}` });
+        const bullets = ordered.slice(0,5).map((a, i) => {
+          const leanTag = a._lean?.label ? ` [Lean: ${a._lean.label}]` : '';
+          return `${i+1}. ${a.title}${leanTag} — ${a.source?.name || ''}\n${a.url}`;
+        }).join('\n\n');
+        return res.status(200).json({ response: `${header}\n\n${bullets}`, category: 'world' });
       }
     }
 
@@ -168,9 +186,20 @@ module.exports = async (req, res) => {
       articles = await fetchFromRSS(category);
       cacheSet(catKey, articles);
     }
-    const top = articles.slice(0, 5);
+    let top = articles.slice(0, 5).map(a => ({
+      ...a,
+      _lean: scoreLean(`${a.title || ''}. ${a.description || ''} ${a.content || ''}`, a.source?.name || '', a.url || '')
+    }));
+    // Reorder by provided preference if possible
+    const norm = (l) => ({ 'left': -1, 'lean-left': -0.5, 'center': 0, 'lean-right': 0.5, 'right': 1 }[l] ?? 0);
+    const desired = typeof politicalLean === 'string' ? norm(politicalLean) : null;
+    if (preference === 'reinforce' && desired !== null) {
+      top.sort((x,y) => Math.abs(norm(y._lean.label) - desired) - Math.abs(norm(x._lean.label) - desired));
+    } else if (preference === 'challenge' && desired !== null) {
+      top.sort((x,y) => Math.abs(norm(x._lean.label) - desired) - Math.abs(norm(y._lean.label) - desired));
+    }
     if (top.length) {
-      const bullets = top.map((a, i) => `${i+1}. ${a.title} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
+      const bullets = top.map((a, i) => `${i+1}. ${a.title}${a._lean?.label ? ` [Lean: ${a._lean.label}]` : ''} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
       const header = category === 'breaking' ? 'Top breaking stories:' : `Top ${category} stories:`;
       return res.status(200).json({ response: `${header}\n\n${bullets}` });
     }

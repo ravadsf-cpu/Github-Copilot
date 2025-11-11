@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 const API_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001';
 
-export default function ChatBot({ politicalLean, interests }) {
+export default function ChatBot({ politicalLean, interests, preference }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -43,7 +43,8 @@ export default function ChatBot({ politicalLean, interests }) {
         body: JSON.stringify({
           message: userMessage,
           politicalLean,
-          interests
+          interests,
+          preference
         })
       });
 

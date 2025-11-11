@@ -1,4 +1,4 @@
-const { fetchFromRSS, summarizeWithAI, detectCategory, inferLean, genAI } = require('./_lib/shared');
+const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, genAI } = require('./_lib/shared');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { category = 'breaking', preference = 'balanced', query } = req.query;
+  const { category = 'breaking', preference = 'balanced', query, userLean } = req.query;
     
     let articles = await fetchFromRSS(category);
     
@@ -27,13 +27,19 @@ module.exports = async (req, res) => {
         ? await detectCategory(article.title, article.description)
         : category || 'general';
       
-      const lean = inferLean(article.source.name);
+      const leanEval = scoreLean(
+        `${article.title || ''}. ${article.description || ''} ${article.content || ''}`,
+        article.source?.name || '',
+        article.url || ''
+      );
       
       return {
         ...article,
         summary,
         category: detectedCategory,
-        lean,
+        lean: leanEval.label,
+        leanScore: leanEval.score,
+        leanReasons: leanEval.reasons,
         id: article.url,
         readTime: Math.ceil((article.content || article.description).split(' ').length / 200),
       };
@@ -48,20 +54,32 @@ module.exports = async (req, res) => {
       );
     }
 
-    // Sort by preference
+    // Sort by preference: reinforce/challenge/balanced
+    const normalizeLean = (l) => ({
+      'left': -1, 'lean-left': -0.5, 'center': 0, 'lean-right': 0.5, 'right': 1
+    }[l] ?? 0);
+
+    const desired = typeof userLean === 'string' && userLean
+      ? normalizeLean(userLean)
+      : null;
+
     if (preference === 'reinforce') {
-      articles.sort((a, b) => {
-        if (a.lean === 'center' && b.lean !== 'center') return 1;
-        if (a.lean !== 'center' && b.lean === 'center') return -1;
-        return 0;
-      });
+      if (desired !== null) {
+        // sort by closeness to desired
+        articles.sort((a,b) => Math.abs(normalizeLean(b.lean) - desired) - Math.abs(normalizeLean(a.lean) - desired));
+      } else {
+        // emphasize stronger opinions when desired unknown
+        articles.sort((a,b) => Math.abs(b.leanScore) - Math.abs(a.leanScore));
+      }
     } else if (preference === 'challenge') {
-      articles.sort((a, b) => {
-        if (a.lean === 'center' && b.lean !== 'center') return -1;
-        if (a.lean !== 'center' && b.lean === 'center') return 1;
-        return 0;
-      });
-    }
+      if (desired !== null) {
+        // show opposite first
+        articles.sort((a,b) => Math.abs(normalizeLean(a.lean) - desired) - Math.abs(normalizeLean(b.lean) - desired));
+      } else {
+        // emphasize balance then extremes
+        articles.sort((a,b) => Math.abs(a.leanScore) - Math.abs(b.leanScore));
+      }
+    } // balanced: keep existing recency-based order
 
     res.status(200).json({ articles });
   } catch (error) {
