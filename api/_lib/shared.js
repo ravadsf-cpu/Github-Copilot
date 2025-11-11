@@ -77,6 +77,34 @@ const stripHtml = (html) => {
     .trim();
 };
 
+// Try to build an embeddable URL for popular video hosts
+function toEmbedFromUrl(url) {
+  try {
+    if (!url) return null;
+    const u = new URL(url.startsWith('//') ? `https:${url}` : url);
+    const host = u.hostname.replace(/^www\./, '');
+    // YouTube
+    if (host.includes('youtube.com')) {
+      const id = u.searchParams.get('v');
+      if (id) return { kind: 'iframe', src: `https://www.youtube.com/embed/${id}` };
+    }
+    if (host === 'youtu.be') {
+      const id = u.pathname.split('/').filter(Boolean)[0];
+      if (id) return { kind: 'iframe', src: `https://www.youtube.com/embed/${id}` };
+    }
+    // Vimeo
+    if (host.includes('vimeo.com')) {
+      const id = u.pathname.split('/').filter(Boolean)[0];
+      if (id && /\d+/.test(id)) return { kind: 'iframe', src: `https://player.vimeo.com/video/${id}` };
+    }
+    // Direct MP4/WEBM
+    if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(u.pathname)) {
+      return { kind: 'video', src: u.toString(), type: `video/${u.pathname.split('.').pop().toLowerCase()}` };
+    }
+  } catch {}
+  return null;
+}
+
 const extractMediaFromHtml = (html) => {
   const images = [];
   const videos = [];
@@ -87,9 +115,32 @@ const extractMediaFromHtml = (html) => {
     while ((match = imgRegex.exec(html)) !== null) {
       images.push({ src: match[1], alt: '' });
     }
+    // iframes (often YouTube/Vimeo or publisher players)
     const iframeRegex = /<iframe[^>]*src=["']([^"']+)["'][^>]*>/gi;
     while ((match = iframeRegex.exec(html)) !== null) {
       videos.push({ kind: 'iframe', src: match[1] });
+    }
+    // <video> tags
+    const videoSrcRegex = /<video[^>]*src=["']([^"']+)["'][^>]*>/gi;
+    while ((match = videoSrcRegex.exec(html)) !== null) {
+      const emb = toEmbedFromUrl(match[1]);
+      if (emb) videos.push(emb);
+      else videos.push({ kind: 'video', src: match[1] });
+    }
+    // <source> inside <video>
+    const sourceRegex = /<source[^>]*src=["']([^"']+)["'][^>]*>/gi;
+    while ((match = sourceRegex.exec(html)) !== null) {
+      const emb = toEmbedFromUrl(match[1]);
+      if (emb) videos.push(emb);
+      else videos.push({ kind: 'video', src: match[1] });
+    }
+    // Plain links to YouTube/Vimeo
+    const linkRegex = /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=([\w-]{6,})|youtu\.be\/([\w-]{6,})|vimeo\.com\/(\d+))/gi;
+    let m;
+    while ((m = linkRegex.exec(html)) !== null) {
+      const full = m[0];
+      const emb = toEmbedFromUrl(full);
+      if (emb) videos.push(emb);
     }
   } catch {}
   return { images, videos };
@@ -107,6 +158,24 @@ async function fetchFromRSS(category = 'breaking') {
         
         // Extract media BEFORE sanitizing to preserve img/iframe tags
         const { images: htmlImages, videos: htmlVideos } = extractMediaFromHtml(fullContent);
+        const videos = [...htmlVideos];
+        // Enclosure video support
+        if (item.enclosure?.url && /video/i.test(item.enclosure.type || '')) {
+          videos.push({ kind: 'video', src: item.enclosure.url, type: item.enclosure.type });
+        }
+        // media:content variants from RSS
+        const mediaContent = item['media:content'] || item['media:group']?.['media:content'];
+        const mcArr = Array.isArray(mediaContent) ? mediaContent : (mediaContent ? [mediaContent] : []);
+        mcArr.forEach(mc => {
+          const url = mc?.url;
+          const type = mc?.type || mc?.medium;
+          if (url && (/video/i.test(type || '') || /\.(mp4|webm|ogg)(\?.*)?$/i.test(url))) {
+            videos.push({ kind: 'video', src: url, type: type?.startsWith('video/') ? type : undefined });
+          } else if (url) {
+            const emb = toEmbedFromUrl(url);
+            if (emb) videos.push(emb);
+          }
+        });
         
         // Now sanitize for display
         const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
@@ -121,7 +190,7 @@ async function fetchFromRSS(category = 'breaking') {
           publishedAt: item.pubDate || new Date().toISOString(),
           content: cleanContent || item.contentSnippet || '',
           contentHtml,
-          media: { images: htmlImages, videos: htmlVideos },
+          media: { images: htmlImages, videos },
         };
       });
       allArticles.push(...articles);
@@ -143,6 +212,22 @@ async function fetchFromFeeds(feedUrls = []) {
         
         // Extract media BEFORE sanitizing to preserve img/iframe tags
         const { images: htmlImages, videos: htmlVideos } = extractMediaFromHtml(fullContent);
+        const videos = [...htmlVideos];
+        if (item.enclosure?.url && /video/i.test(item.enclosure.type || '')) {
+          videos.push({ kind: 'video', src: item.enclosure.url, type: item.enclosure.type });
+        }
+        const mediaContent = item['media:content'] || item['media:group']?.['media:content'];
+        const mcArr = Array.isArray(mediaContent) ? mediaContent : (mediaContent ? [mediaContent] : []);
+        mcArr.forEach(mc => {
+          const url = mc?.url;
+          const type = mc?.type || mc?.medium;
+          if (url && (/video/i.test(type || '') || /\.(mp4|webm|ogg)(\?.*)?$/i.test(url))) {
+            videos.push({ kind: 'video', src: url, type: type?.startsWith('video/') ? type : undefined });
+          } else if (url) {
+            const emb = toEmbedFromUrl(url);
+            if (emb) videos.push(emb);
+          }
+        });
         
         // Now sanitize for display
         const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
@@ -157,7 +242,7 @@ async function fetchFromFeeds(feedUrls = []) {
           publishedAt: item.pubDate || new Date().toISOString(),
           content: cleanContent || item.contentSnippet || '',
           contentHtml,
-          media: { images: htmlImages, videos: htmlVideos },
+          media: { images: htmlImages, videos },
         };
       });
       allArticles.push(...articles);
@@ -311,4 +396,5 @@ module.exports = {
   scoreLean,
   stripHtml,
   REGIONAL_FEEDS,
+  toEmbedFromUrl,
 };
