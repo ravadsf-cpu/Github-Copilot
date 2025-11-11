@@ -252,16 +252,6 @@ const ArticlePage = () => {
               </div>
             </motion.div>
           )}
-                        type={vid.type}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
 
           {/* Full Article Content */}
           <motion.article
