@@ -321,27 +321,28 @@ const ArticlePage = () => {
                     let thumb = null;
                     if (/youtube\.com|youtu\.be/.test(videoSrc)) {
                       const match = videoSrc.match(/embed\/([\w-]{6,})/);
-                      if (match) thumb = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+                      if (match) thumb = `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
                     } else if (/vimeo\.com/.test(videoSrc)) {
                       const match = videoSrc.match(/video\/([0-9]+)/);
                       if (match) thumb = `https://vumbnail.com/${match[1]}.jpg`;
                     }
                     // Fallback image if no thumb
                     const fallbackImg = article.urlToImage || article.image || (article.media?.images?.[0]?.src);
-                    const hasError = iframeErrors[idx];
+                    const displayThumb = thumb || fallbackImg || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="450"%3E%3Crect fill="%23222" width="800" height="450"/%3E%3C/svg%3E';
                     
                     return (
-                      <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10" style={{ minHeight: '400px' }}>
-                        {/* Always show thumbnail as background */}
-                        {(thumb || fallbackImg) && (
-                          <img 
-                            src={thumb || fallbackImg} 
-                            alt="Video preview" 
-                            className="absolute inset-0 w-full h-full object-cover"
-                            style={{ zIndex: 0 }}
-                          />
-                        )}
-                        <div className="relative w-full" style={{ paddingBottom: '56.25%', zIndex: 1 }}>
+                      <div key={idx} className="relative rounded-xl overflow-hidden border border-white/10" style={{ minHeight: '400px', background: '#1a1a1a' }}>
+                        {/* Background thumbnail - always visible */}
+                        <img 
+                          src={displayThumb} 
+                          alt="Video preview" 
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="450"%3E%3Crect fill="%23222" width="800" height="450"/%3E%3C/svg%3E';
+                          }}
+                        />
+                        {/* Iframe container */}
+                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                           <iframe
                             src={videoSrc}
                             title={`Video ${idx + 1}`}
@@ -349,31 +350,34 @@ const ArticlePage = () => {
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             loading="eager"
-                            style={{ background: 'transparent', zIndex: 2 }}
-                            onError={() => setIframeErrors(prev => ({ ...prev, [idx]: true }))}
                           />
                         </div>
-                        {/* Large play button overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 3 }}>
-                          <div className="bg-purple-600/80 rounded-full p-6 shadow-2xl">
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="white" stroke="none">
+                        {/* Large clickable play button that opens video */}
+                        <a 
+                          href={videoSrc} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="absolute inset-0 flex items-center justify-center group cursor-pointer"
+                          style={{ zIndex: 10 }}
+                        >
+                          <div className="bg-purple-600 group-hover:bg-purple-700 rounded-full p-8 shadow-2xl transition-all transform group-hover:scale-110">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="white" stroke="none">
                               <polygon points="5 3 19 12 5 21 5 3" />
                             </svg>
                           </div>
-                        </div>
+                        </a>
                         {/* Open in new tab button */}
                         <a 
                           href={videoSrc} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 shadow-lg"
-                          style={{ zIndex: 4 }}
+                          className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 shadow-lg z-20"
                         >
                           Open in new tab
                         </a>
                         {/* Helpful text at bottom */}
-                        <div className="absolute bottom-4 left-4 right-4 bg-black/80 text-white text-sm rounded-lg px-4 py-2" style={{ zIndex: 4 }}>
-                          Click the play button above or open in a new tab to watch
+                        <div className="absolute bottom-4 left-4 right-4 bg-black/90 text-white text-sm rounded-lg px-4 py-2 z-20">
+                          If video doesn't play, open in YouTube/Vimeo.
                         </div>
                       </div>
                     );
