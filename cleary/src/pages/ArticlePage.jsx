@@ -220,29 +220,37 @@ const ArticlePage = () => {
             >
               <h2 className="text-xl font-semibold text-white mb-4">Images ({article.media.images.length})</h2>
               <div className={`grid gap-4 ${article.media.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                {article.media.images.slice(0, 8).map((img, idx) => {
-                  const imgSrc = typeof img === 'string' ? img : img.src;
-                  const imgAlt = typeof img === 'object' ? img.alt : '';
-                  return (
-                    <div key={idx} className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                      <img
-                        src={imgSrc}
-                        alt={imgAlt || `Article image ${idx + 1}`}
-                        className="w-full h-auto object-cover max-h-96"
-                        loading="lazy"
-                        onError={(e) => { 
-                          console.log('Image failed to load:', imgSrc);
-                          e.target.parentElement.style.display = 'none'; 
-                        }}
-                      />
-                      {imgAlt && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-2">
-                          <p className="text-xs text-gray-300">{imgAlt}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {(() => {
+                  const featuredImage = article.urlToImage || article.image || article.media?.images?.[0]?.src;
+                  // Filter out the featured image from gallery
+                  const galleryImages = article.media.images.filter(img => {
+                    const imgSrc = typeof img === 'string' ? img : img.src;
+                    return imgSrc && imgSrc !== featuredImage;
+                  });
+                  return galleryImages.slice(0, 8).map((img, idx) => {
+                    const imgSrc = typeof img === 'string' ? img : img.src;
+                    const imgAlt = typeof img === 'object' ? img.alt : '';
+                    return (
+                      <div key={idx} className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                        <img
+                          src={imgSrc}
+                          alt={imgAlt || `Article image ${idx + 1}`}
+                          className="w-full h-auto object-cover max-h-96"
+                          loading="lazy"
+                          onError={(e) => { 
+                            console.log('Image failed to load:', imgSrc);
+                            e.target.parentElement.style.display = 'none'; 
+                          }}
+                        />
+                        {imgAlt && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-2">
+                            <p className="text-xs text-gray-300">{imgAlt}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </motion.div>
           )}
