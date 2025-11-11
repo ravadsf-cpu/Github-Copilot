@@ -1,4 +1,4 @@
-const { fetchFromRSS, summarizeWithAI, detectCategory, inferLean } = require('./_lib/shared');
+const { fetchFromRSS, summarizeWithAI, detectCategory, inferLean, genAI } = require('./_lib/shared');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -15,10 +15,18 @@ module.exports = async (req, res) => {
     
     let articles = await fetchFromRSS(category);
     
-    // Enhance articles with AI
+    // Quick enhancement without slow AI calls
+    const useAI = genAI && articles.length < 20; // Only use AI for small batches
+    
     articles = await Promise.all(articles.map(async (article) => {
-      const summary = await summarizeWithAI(article.content || article.description, 160);
-      const detectedCategory = await detectCategory(article.title, article.description);
+      const summary = useAI 
+        ? await summarizeWithAI(article.content || article.description, 160)
+        : (article.description || article.content || '').slice(0, 160);
+      
+      const detectedCategory = useAI
+        ? await detectCategory(article.title, article.description)
+        : category || 'general';
+      
       const lean = inferLean(article.source.name);
       
       return {
