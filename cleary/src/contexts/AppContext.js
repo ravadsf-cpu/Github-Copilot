@@ -9,7 +9,7 @@ export const AppProvider = ({ children }) => {
   const [userPreferences, setUserPreferences] = useState({
     topics: ['economy', 'science', 'war', 'politics'],
     excludeTopics: [],
-    politicalBalance: 'reinforce', // balanced, challenge, reinforce
+    politicalBalance: 'reinforce', // reinforce, balanced, challenge
   });
   const [readingHistory, setReadingHistory] = useState([]);
   const [backgroundMood, setBackgroundMood] = useState('neutral');
