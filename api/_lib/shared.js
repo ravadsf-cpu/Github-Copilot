@@ -30,6 +30,19 @@ const RSS_FEEDS = {
     'https://rss.nytimes.com/services/xml/rss/nyt/Science.xml',
     'http://rss.cnn.com/rss/cnn_tech.rss',
   ],
+  world: [
+    'https://feeds.bbci.co.uk/news/world/rss.xml',
+    'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
+    'https://www.aljazeera.com/xml/rss/all.xml',
+    'https://feeds.reuters.com/Reuters/worldNews',
+    'https://www.theguardian.com/world/rss'
+  ],
+  business: [
+    'https://feeds.bbci.co.uk/news/business/rss.xml',
+    'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml',
+    'https://feeds.reuters.com/reuters/businessNews',
+    'https://www.theguardian.com/uk/business/rss'
+  ],
 };
 
 const stripHtml = (html) => {

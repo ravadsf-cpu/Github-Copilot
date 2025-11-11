@@ -61,18 +61,23 @@ module.exports = async (req, res) => {
 
     // Heuristic fallback: return live headlines based on intent
     const msg = (message || '').toLowerCase();
-    const categories = ['politics', 'health', 'science'];
+    // Expand intents: india/pakistan/world/business/tech/health/politics
     let category = 'breaking';
-    for (const c of categories) {
-      if (msg.includes(c)) { category = c; break; }
-    }
-    if (msg.includes('tech') || msg.includes('technology')) category = 'science';
+    if (/(india|pakistan|south asia|asia)/i.test(msg)) category = 'world';
+    else if (/business|econom(y|ic)|market|stocks|finance/.test(msg)) category = 'business';
+    else if (/politic|election|policy|government/.test(msg)) category = 'politics';
+    else if (/health|covid|vaccine|disease/.test(msg)) category = 'health';
+    else if (/tech|technology|ai|software|hardware/.test(msg)) category = 'science';
 
     const articles = await fetchFromRSS(category);
     const top = articles.slice(0, 5);
     if (top.length) {
       const bullets = top.map((a, i) => `${i+1}. ${a.title} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
-      const header = category === 'breaking' ? 'Top breaking stories:' : `Top ${category} stories:`;
+      const header = category === 'breaking'
+        ? 'Top breaking stories:'
+        : category === 'world' && /(india|pakistan)/.test(msg)
+          ? 'Top South Asia stories:'
+          : `Top ${category} stories:`;
       return res.status(200).json({ response: `${header}\n\n${bullets}` });
     }
 
