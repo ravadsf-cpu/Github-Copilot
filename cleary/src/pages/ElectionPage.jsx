@@ -26,7 +26,7 @@ const ElectionPage = () => {
   // Define fetchElectionResults BEFORE useEffect that calls it to satisfy ESLint no-use-before-define
   const fetchElectionResults = useCallback(async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/election-results?type=${electionType}`);
+      const response = await fetch(`/api/election-results?type=${electionType}`);
       const data = await response.json();
       setElectionData(data);
       // Auto-select first city for mayoral so the map shows immediately
@@ -56,7 +56,7 @@ const ElectionPage = () => {
 
   const fetchActiveElections = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/elections/active');
+      const response = await fetch('/api/elections/active');
       const data = await response.json();
       setActiveElections(data.activeElections || []);
       

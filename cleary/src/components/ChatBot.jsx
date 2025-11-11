@@ -3,7 +3,7 @@ import { MessageCircle, Send, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5001';
+const API_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001';
 
 export default function ChatBot({ politicalLean, interests }) {
   const [isOpen, setIsOpen] = useState(false);
