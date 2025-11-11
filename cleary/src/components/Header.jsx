@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion, useSpring } from 'framer-motion';
-import { Home, Newspaper, TrendingUp, BarChart2, Video, User, LogOut, Vote } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Newspaper, BarChart2, Video, User, LogOut, Vote } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {

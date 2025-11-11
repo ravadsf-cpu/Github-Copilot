@@ -5,7 +5,7 @@ import { Shield, Target, Zap, TrendingUp } from 'lucide-react';
 const BiasDetectionDashboard = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [biasData, setBiasData] = useState([
+  const [biasData] = useState([
     { source: 'Reuters', bias: 0, credibility: 98, articles: 1250 },
     { source: 'Bloomberg', bias: -15, credibility: 96, articles: 980 },
     { source: 'The Guardian', bias: -25, credibility: 89, articles: 850 },
@@ -48,7 +48,7 @@ const BiasDetectionDashboard = () => {
         }, interval);
       }, index * 150);
     });
-  }, [isInView]);
+  }, [isInView, biasData]);
 
   const getBiasColor = (bias) => {
     if (bias < -30) return '#ef4444'; // red (left)

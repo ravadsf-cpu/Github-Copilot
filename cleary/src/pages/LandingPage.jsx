@@ -289,18 +289,18 @@ const LandingPage = () => {
                 <div>
                   <h3 className="text-white font-semibold mb-4">Product</h3>
                   <ul className="space-y-2 text-gray-400 text-sm">
-                    <li><a href="#" className="hover:text-purple-400 transition-colors">Features</a></li>
-                    <li><a href="#" className="hover:text-purple-400 transition-colors">Pricing</a></li>
-                    <li><a href="#" className="hover:text-purple-400 transition-colors">API</a></li>
+                    <li><button className="hover:text-purple-400 transition-colors">Features</button></li>
+                    <li><button className="hover:text-purple-400 transition-colors">Pricing</button></li>
+                    <li><button className="hover:text-purple-400 transition-colors">API</button></li>
                   </ul>
                 </div>
 
                 <div>
                   <h3 className="text-white font-semibold mb-4">Company</h3>
                   <ul className="space-y-2 text-gray-400 text-sm">
-                    <li><a href="#" className="hover:text-purple-400 transition-colors">About</a></li>
-                    <li><a href="#" className="hover:text-purple-400 transition-colors">Blog</a></li>
-                    <li><a href="#" className="hover:text-purple-400 transition-colors">Careers</a></li>
+                    <li><button className="hover:text-purple-400 transition-colors">About</button></li>
+                    <li><button className="hover:text-purple-400 transition-colors">Blog</button></li>
+                    <li><button className="hover:text-purple-400 transition-colors">Careers</button></li>
                   </ul>
                 </div>
               </div>

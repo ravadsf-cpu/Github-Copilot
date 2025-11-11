@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, TrendingUp, Activity, Shield, ChevronRight, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Activity, Shield, Sparkles } from 'lucide-react';
 
 const LiveNewsVisualization = () => {
   const [biasMetrics, setBiasMetrics] = useState([]);
   const [credibilityScores, setCredibilityScores] = useState({});
   const tickerRef = useRef(null);
 
-  const newsCategories = [
+  const newsCategories = useMemo(() => [
     { name: 'Politics', bias: -15, credibility: 87, color: 'from-blue-500 to-cyan-500', articles: 234 },
     { name: 'Technology', bias: 5, credibility: 92, color: 'from-purple-500 to-pink-500', articles: 189 },
     { name: 'Business', bias: 10, credibility: 89, color: 'from-green-500 to-emerald-500', articles: 156 },
     { name: 'Health', bias: -5, credibility: 94, color: 'from-red-500 to-orange-500', articles: 112 },
     { name: 'Science', bias: 0, credibility: 96, color: 'from-indigo-500 to-purple-500', articles: 98 }
-  ];
+  ], []);
 
   const tickerNews = [
     "Federal Reserve signals rate stability through Q1 2026",
@@ -31,7 +31,7 @@ const LiveNewsVisualization = () => {
       setBiasMetrics(newsCategories);
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [newsCategories]);
 
   // Credibility score animation
   useEffect(() => {
@@ -43,7 +43,7 @@ const LiveNewsVisualization = () => {
         }));
       }, 200 * index);
     });
-  }, []);
+  }, [newsCategories]);
 
   const getBiasPosition = (bias) => {
     // Convert bias from -50 to +50 to percentage 0-100

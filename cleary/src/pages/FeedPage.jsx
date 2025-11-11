@@ -10,7 +10,6 @@ import { mockArticles } from '../utils/mockData';
 import { fetchNews, getLean } from '../utils/aiService';
 import { useApp } from '../contexts/AppContext';
 import { Search, Filter } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 const FeedPage = () => {
   const [articles, setArticles] = useState([]);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, useSpring } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AnimatedBackground from '../components/AnimatedBackground';

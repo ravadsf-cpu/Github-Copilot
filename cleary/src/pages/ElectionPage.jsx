@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import ElectionMap from '../components/ElectionMap';
 import CityMap from '../components/CityMap';
 import { TrendingUp, MapPin, Users, Clock, Building2, Landmark, Sun, Moon } from 'lucide-react';
@@ -18,24 +18,41 @@ const ElectionPage = () => {
   const [electionType, setElectionType] = useState('presidential');
   const { theme, toggle } = useTheme();
 
-  // Fetch active elections
+  // Fetch active elections once on mount
   useEffect(() => {
     fetchActiveElections();
   }, []);
 
-  // Fetch election results when type changes
+  // Define fetchElectionResults BEFORE useEffect that calls it to satisfy ESLint no-use-before-define
+  const fetchElectionResults = useCallback(async () => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/election-results?type=${electionType}`);
+      const data = await response.json();
+      setElectionData(data);
+      // Auto-select first city for mayoral so the map shows immediately
+      if (electionType === 'mayoral' && data?.cities) {
+        const cityNames = Object.keys(data.cities);
+        if (cityNames.length > 0) {
+          if (!selectedCity || !data.cities[selectedCity]) {
+            setSelectedCity(cityNames[0]);
+            setSelectedDistrict(null);
+          }
+        }
+      }
+      setLastUpdate(new Date());
+    } catch (error) {
+      console.error('Failed to fetch election results:', error);
+    }
+  }, [electionType, selectedCity]);
+
+  // Fetch election results when type or active elections change
   useEffect(() => {
     if (activeElections.length > 0) {
       fetchElectionResults();
-      
-      // Auto-refresh every 30 seconds
-      const interval = setInterval(() => {
-        fetchElectionResults();
-      }, 30000);
-      
+      const interval = setInterval(fetchElectionResults, 30000);
       return () => clearInterval(interval);
     }
-  }, [electionType, activeElections]);
+  }, [electionType, activeElections, fetchElectionResults]);
 
   const fetchActiveElections = async () => {
     try {
@@ -55,27 +72,7 @@ const ElectionPage = () => {
     }
   };
 
-  const fetchElectionResults = async () => {
-    try {
-      const response = await fetch(`http://localhost:5001/api/election-results?type=${electionType}`);
-      const data = await response.json();
-      setElectionData(data);
-      // Auto-select first city for mayoral so the map shows immediately
-      if (electionType === 'mayoral' && data?.cities) {
-        const cityNames = Object.keys(data.cities);
-        if (cityNames.length > 0) {
-          // If current selectedCity is not in the new dataset, or not set, choose the first one
-          if (!selectedCity || !data.cities[selectedCity]) {
-            setSelectedCity(cityNames[0]);
-            setSelectedDistrict(null);
-          }
-        }
-      }
-      setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Failed to fetch election results:', error);
-    }
-  };
+  // (fetchElectionResults moved above for ESLint compliance)
 
   const handleStateClick = (stateCode) => {
     setSelectedState(stateCode === selectedState ? null : stateCode);

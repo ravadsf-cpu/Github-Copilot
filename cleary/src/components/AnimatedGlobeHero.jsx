@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
-import { Globe, Zap, Shield, TrendingUp, Activity } from 'lucide-react';
-import gsap from 'gsap';
+import { Globe, Zap, Shield, TrendingUp } from 'lucide-react';
 
 const AnimatedGlobeHero = () => {
   const canvasRef = useRef(null);
   const heroRef = useRef(null);
   const containerRef = useRef(null);
-  const [pulses, setPulses] = useState([]);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [hoveredStat, setHoveredStat] = useState(null);
   const [timeGradient, setTimeGradient] = useState('from-blue-900/20 via-purple-900/20 to-pink-900/20');
