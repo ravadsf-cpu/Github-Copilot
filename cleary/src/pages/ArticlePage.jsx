@@ -302,16 +302,21 @@ const ArticlePage = () => {
                   }
                   // Iframe videos (YouTube/Vimeo)
                   if (videoKind === 'iframe' && videoSrc) {
-                    // Try to show a preview thumbnail for YouTube
+                    // Try to show a preview thumbnail for YouTube/Vimeo
                     let thumb = null;
                     if (/youtube\.com|youtu\.be/.test(videoSrc)) {
                       const match = videoSrc.match(/embed\/([\w-]{6,})/);
                       if (match) thumb = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+                    } else if (/vimeo\.com/.test(videoSrc)) {
+                      const match = videoSrc.match(/video\/([0-9]+)/);
+                      if (match) thumb = `https://vumbnail.com/${match[1]}.jpg`;
                     }
+                    // Fallback image if no thumb
+                    const fallbackImg = article.urlToImage || article.image || (article.media?.images?.[0]?.src);
                     return (
                       <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10" style={{ minHeight: '240px' }}>
-                        {thumb && (
-                          <img src={thumb} alt="Video preview" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                        {(thumb || fallbackImg) && (
+                          <img src={thumb || fallbackImg} alt="Video preview" className="absolute inset-0 w-full h-full object-cover opacity-60" />
                         )}
                         <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                           <iframe
@@ -321,7 +326,7 @@ const ArticlePage = () => {
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             loading="lazy"
-                            style={{ background: thumb ? 'transparent' : '#000' }}
+                            style={{ background: (thumb || fallbackImg) ? 'transparent' : '#222' }}
                           />
                         </div>
                         {/* Fallback/error message if blocked */}
