@@ -137,20 +137,24 @@ const ArticlePage = () => {
           </div>
 
           {/* Featured image */}
-          {article.image && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="relative h-96 rounded-2xl overflow-hidden mb-8"
-            >
-              <img
-                src={article.image}
-                alt={article.title}
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-          )}
+          {(() => {
+            const featuredImage = article.urlToImage || article.image || article.media?.images?.[0]?.src;
+            return featuredImage ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="relative h-96 rounded-2xl overflow-hidden mb-8"
+              >
+                <img
+                  src={featuredImage}
+                  alt={article.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.style.display = 'none'; }}
+                />
+              </motion.div>
+            ) : null;
+          })()}
 
           {/* AI Summary */}
           {article.summary && (

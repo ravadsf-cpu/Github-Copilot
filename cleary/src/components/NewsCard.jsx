@@ -75,7 +75,7 @@ const NewsCard = ({ article, index }) => {
       >
         {/* Image */}
         {(() => {
-          const cardImage = article.image || article.media?.images?.[0]?.src;
+          const cardImage = article.urlToImage || article.image || article.media?.images?.[0]?.src;
           return cardImage ? (
           <div className="relative h-48 overflow-hidden">
             <motion.img
@@ -86,6 +86,10 @@ const NewsCard = ({ article, index }) => {
                 scale: isHovered ? 1.05 : 1
               }}
               transition={{ duration: 0.3 }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.style.display = 'none';
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             

@@ -20,46 +20,10 @@ module.exports = async (req, res) => {
   }
 
   try {
-  const { message, context, politicalLean, preference } = req.body;
-    // Prefer OpenAI if available
-    if (process.env.OPENAI_API_KEY && OpenAIClient) {
-      try {
-        const openai = new OpenAIClient({ apiKey: process.env.OPENAI_API_KEY });
-        const system = "You are a concise, trustworthy news assistant. Be direct. Use bullet points when listing headlines.";
-        const user = context ? `${context}\n\nUser: ${message}` : message;
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user }
-          ],
-          temperature: 0.3,
-          max_tokens: 300
-        });
-        const response = completion.choices?.[0]?.message?.content?.trim() || "";
-        if (response) return res.status(200).json({ response });
-      } catch (e) {
-        console.error('OpenAI chat error:', e.message);
-        // fall through to Gemini or heuristic fallback
-      }
-    }
-
-    // Next try Gemini if configured
-    if (process.env.GEMINI_API_KEY && genAI) {
-      try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const prompt = context 
-          ? `You are a helpful news assistant. Context: ${context}\n\nUser: ${message}\n\nAssistant:`
-          : `You are a helpful news assistant. User: ${message}\n\nAssistant:`;
-        const result = await model.generateContent(prompt);
-        const response = result.response.text();
-        if (response) return res.status(200).json({ response });
-      } catch (e) {
-        console.error('Gemini chat error:', e.message);
-      }
-    }
-
-    // Heuristic fallback: return live headlines based on intent
+    const { message, context, politicalLean, preference } = req.body;
+    
+    // IMPORTANT: Always use heuristic fallback for now to ensure varied responses
+    // Skip AI calls temporarily until API keys are properly configured
     const msg = (message || '').toLowerCase();
 
     // Simple in-memory cache per serverless instance
