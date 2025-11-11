@@ -105,7 +105,7 @@ const NewsCard = ({ article, index }) => {
               </div>
             )}
 
-            {/* Lean badge with hover tooltip */}
+            {/* Lean badge with hover tooltip + Video badge when applicable */}
             <div 
               className="absolute bottom-2 left-2 relative"
               onMouseEnter={() => setShowLeanTooltip(true)}
@@ -118,6 +118,16 @@ const NewsCard = ({ article, index }) => {
                 <div className={`w-2 h-2 rounded-full bg-gradient-to-br ${leanStyle.color} animate-pulse`} />
                 <span className={`text-xs font-semibold ${leanStyle.text}`}>{leanStyle.label}</span>
                 <Info className={`w-3 h-3 ${leanStyle.text}`} />
+                {article.media?.videos?.length > 0 && (
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-pink-600/40 to-purple-600/40 text-[10px] font-semibold text-pink-100 border border-pink-400/30 shadow-sm"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-300 animate-pulse" />
+                    Video
+                  </motion.span>
+                )}
               </motion.div>
 
               {/* Tooltip with reasons */}
