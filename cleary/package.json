@@ -43,7 +43,7 @@
   "scripts": {
     "start": "DANGEROUSLY_DISABLE_HOST_CHECK=true HOST=localhost react-scripts start",
     "server": "node server/index.js",
-    "dev": "concurrently \"npm run start\" \"npm run server\"",
+    "dev": "npm run server & sleep 3 && npm run start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
