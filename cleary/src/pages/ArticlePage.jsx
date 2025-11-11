@@ -11,6 +11,7 @@ const ArticlePage = () => {
   const navigate = useNavigate();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [iframeErrors, setIframeErrors] = useState({});
 
   useEffect(() => {
     const loadArticle = async () => {
@@ -222,10 +223,16 @@ const ArticlePage = () => {
               <div className={`grid gap-4 ${article.media.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 {(() => {
                   const featuredImage = article.urlToImage || article.image || article.media?.images?.[0]?.src;
-                  // Filter out the featured image from gallery
+                  // Try to get video thumbnail if present
+                  let videoThumb = null;
+                  if (article.media && article.media.videos && article.media.videos.length > 0) {
+                    const video = article.media.videos[0];
+                    if (video && video.thumbnail) videoThumb = video.thumbnail;
+                  }
+                  // Filter out both featured image and video thumbnail from gallery
                   const galleryImages = article.media.images.filter(img => {
                     const imgSrc = typeof img === 'string' ? img : img.src;
-                    return imgSrc && imgSrc !== featuredImage;
+                    return imgSrc && imgSrc !== featuredImage && imgSrc !== videoThumb;
                   });
                   return galleryImages.slice(0, 8).map((img, idx) => {
                     const imgSrc = typeof img === 'string' ? img : img.src;
@@ -321,27 +328,53 @@ const ArticlePage = () => {
                     }
                     // Fallback image if no thumb
                     const fallbackImg = article.urlToImage || article.image || (article.media?.images?.[0]?.src);
+                    const hasError = iframeErrors[idx];
+                    
                     return (
-                      <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10" style={{ minHeight: '240px' }}>
+                      <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10" style={{ minHeight: '400px' }}>
+                        {/* Always show thumbnail as background */}
                         {(thumb || fallbackImg) && (
-                          <img src={thumb || fallbackImg} alt="Video preview" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                          <img 
+                            src={thumb || fallbackImg} 
+                            alt="Video preview" 
+                            className="absolute inset-0 w-full h-full object-cover"
+                            style={{ zIndex: 0 }}
+                          />
                         )}
-                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                        <div className="relative w-full" style={{ paddingBottom: '56.25%', zIndex: 1 }}>
                           <iframe
                             src={videoSrc}
                             title={`Video ${idx + 1}`}
                             className="absolute inset-0 w-full h-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
-                            loading="lazy"
-                            style={{ background: (thumb || fallbackImg) ? 'transparent' : '#222' }}
+                            loading="eager"
+                            style={{ background: 'transparent', zIndex: 2 }}
+                            onError={() => setIframeErrors(prev => ({ ...prev, [idx]: true }))}
                           />
                         </div>
-                        {/* Fallback/error message if blocked */}
-                        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs rounded px-2 py-1">
-                          If video doesn't play, open in YouTube/Vimeo.
+                        {/* Large play button overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 3 }}>
+                          <div className="bg-purple-600/80 rounded-full p-6 shadow-2xl">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="white" stroke="none">
+                              <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                          </div>
                         </div>
-                        <a href={videoSrc} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 px-2 py-1 rounded bg-purple-600/80 text-white text-xs hover:bg-purple-700">Open in new tab</a>
+                        {/* Open in new tab button */}
+                        <a 
+                          href={videoSrc} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 shadow-lg"
+                          style={{ zIndex: 4 }}
+                        >
+                          Open in new tab
+                        </a>
+                        {/* Helpful text at bottom */}
+                        <div className="absolute bottom-4 left-4 right-4 bg-black/80 text-white text-sm rounded-lg px-4 py-2" style={{ zIndex: 4 }}>
+                          Click the play button above or open in a new tab to watch
+                        </div>
                       </div>
                     );
                   }
