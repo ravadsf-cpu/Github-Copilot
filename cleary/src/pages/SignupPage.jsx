@@ -6,7 +6,7 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import RippleButton from '../components/RippleButton';
 
 const SignupPage = () => {
-  const { signup, loginWithGoogle, loginAsGuest, isDemoMode } = useAuth();
+  const { loginWithGoogle, loginAsGuest, isDemoMode } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
