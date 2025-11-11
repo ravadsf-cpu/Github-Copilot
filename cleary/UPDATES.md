@@ -204,6 +204,7 @@ The system analyzes your reading patterns by tracking which sources you click on
 ## Deployment Notes
 
 - 2025-11-11: Triggering redeploy to Vercel. Serverless API now lives at repository root `/api/*`, and frontend builds from `cleary/` to `cleary/build` as configured in `vercel.json`.
+- 2025-11-11: Added GEMINI_API_KEY environment variable for AI chat functionality.
 Based on your detected lean and Profile preferences:
 - **Balanced**: Interleaves center/left/right articles
 - **Reinforce**: Shows more articles matching your lean
