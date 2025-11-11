@@ -143,7 +143,7 @@ const FeedPage = () => {
   const mergedArticles = React.useMemo(() => {
     const ids = new Set();
     const ordered = [];
-    // Prioritize remaining items with videos at the top while preserving input order
+    // Split displayArticles by video presence
     const withVideo = [];
     const withoutVideo = [];
     (displayArticles || []).forEach(a => {
@@ -151,7 +151,18 @@ const FeedPage = () => {
       (hasVid ? withVideo : withoutVideo).push(a);
     });
     const prioritized = [...withVideo, ...withoutVideo];
+
+    // Guarantee the first item has a video if any exist
+    const hnVideo = (happeningNow || []).find(a => a.media && a.media.videos && a.media.videos.length > 0);
+    const firstVideo = hnVideo || withVideo[0];
+    if (firstVideo) {
+      ids.add(firstVideo.id);
+      ordered.push(firstVideo);
+    }
+
+    // Then add the rest of Happening Now
     (happeningNow || []).forEach(a => { if (!ids.has(a.id)) { ids.add(a.id); ordered.push(a); } });
+    // Then add prioritized remainder (videos first, then others), keeping order and no dups
     prioritized.forEach(a => { if (!ids.has(a.id)) { ids.add(a.id); ordered.push(a); } });
     return ordered;
   }, [happeningNow, displayArticles]);
