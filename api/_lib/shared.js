@@ -104,8 +104,12 @@ async function fetchFromRSS(category = 'breaking') {
       const feed = await rssParser.parseURL(feedUrl);
       const articles = feed.items.slice(0, 15).map((item) => {
         let fullContent = item['content:encoded'] || item.content || item.summary || item.description || '';
-        const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
+        
+        // Extract media BEFORE sanitizing to preserve img/iframe tags
         const { images: htmlImages, videos: htmlVideos } = extractMediaFromHtml(fullContent);
+        
+        // Now sanitize for display
+        const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
         const cleanContent = stripHtml(fullContent);
 
         return {
@@ -136,8 +140,12 @@ async function fetchFromFeeds(feedUrls = []) {
       const feed = await rssParser.parseURL(feedUrl);
       const articles = feed.items.slice(0, 15).map((item) => {
         let fullContent = item['content:encoded'] || item.content || item.summary || item.description || '';
-        const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
+        
+        // Extract media BEFORE sanitizing to preserve img/iframe tags
         const { images: htmlImages, videos: htmlVideos } = extractMediaFromHtml(fullContent);
+        
+        // Now sanitize for display
+        const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
         const cleanContent = stripHtml(fullContent);
 
         return {
