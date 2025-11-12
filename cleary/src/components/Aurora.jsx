@@ -97,7 +97,7 @@ void main() {
   float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
   height = exp(height);
   height = (uv.y * 2.0 - height + 0.2);
-  float intensity = 0.6 * height;
+  float intensity = 1.2 * height;
   
   float midPoint = 0.20;
   float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
@@ -202,7 +202,7 @@ void main() {
   float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
   height = exp(height);
   height = (uv.y * 2.0 - height + 0.2);
-  float intensity = 0.6 * height;
+  float intensity = 1.2 * height;
   
   float midPoint = 0.20;
   float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
@@ -234,13 +234,11 @@ export default function Aurora(props) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.canvas.style.backgroundColor = 'transparent';
-  gl.canvas.style.mixBlendMode = 'screen';
-  gl.canvas.style.opacity = '0.7';
-  gl.canvas.style.position = 'absolute';
-  gl.canvas.style.top = '0px';
-  gl.canvas.style.left = '0px';
-
-    let program;
+    gl.canvas.style.mixBlendMode = 'screen';
+    gl.canvas.style.opacity = '0.9';
+    gl.canvas.style.position = 'absolute';
+    gl.canvas.style.top = '0px';
+    gl.canvas.style.left = '0px';    let program;
 
     function resize() {
       if (!ctn) return;

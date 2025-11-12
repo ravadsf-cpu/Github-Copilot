@@ -71,10 +71,10 @@ const LandingPage = () => {
     <div className="relative bg-black min-h-screen overflow-hidden">
       {/* Aurora OGL Shader Full-Page Background */}
       <Aurora
-        colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
-        blend={0.5}
-        amplitude={1.0}
-        speed={0.5}
+        colorStops={["#10B981", "#8B5CF6", "#6366F1"]}
+        blend={0.8}
+        amplitude={2.5}
+        speed={0.8}
       />
       {/* Scroll Progress Indicator */}
       <ScrollProgress />
