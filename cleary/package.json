@@ -23,6 +23,7 @@
     "lucide-react": "^0.552.0",
     "node-fetch": "^2.7.0",
     "npm": "^11.6.0",
+  "ogl": "^1.0.11",
     "openai": "^6.7.0",
     "postcss-flexbugs-fixes": "^4.2.1",
     "postcss-preset-env": "^6.7.2",
