@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import AnimatedGlobeHero from '../components/AnimatedGlobeHero';
+import Aurora from '../components/Aurora';
 import StreamingNewsFeed from '../components/StreamingNewsFeed';
 import BiasDetectionDashboard from '../components/BiasDetectionDashboard';
 import LiveNewsVisualization from '../components/LiveNewsVisualization';
@@ -68,6 +69,13 @@ const LandingPage = () => {
 
   return (
     <div className="relative bg-black min-h-screen overflow-hidden">
+      {/* Aurora OGL Shader Full-Page Background */}
+      <Aurora
+        colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
+        blend={0.5}
+        amplitude={1.0}
+        speed={0.5}
+      />
       {/* Scroll Progress Indicator */}
       <ScrollProgress />
 
@@ -111,8 +119,8 @@ const LandingPage = () => {
         </div>
       </motion.header>
 
-      <AnimatedBackground mood="neutral">
-        <div ref={containerRef} className="relative">
+  <AnimatedBackground mood="neutral">
+  <div ref={containerRef} className="relative">
           
           {/* HERO: Animated Globe Command Center */}
           <AnimatedGlobeHero />

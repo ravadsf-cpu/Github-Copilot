@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Globe, Zap, Shield, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import Aurora from './Aurora';
 
 const AnimatedGlobeHero = () => {
   const canvasRef = useRef(null);
@@ -224,12 +226,20 @@ const AnimatedGlobeHero = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const navigate = useNavigate();
   return (
     <motion.div
       ref={heroRef}
       style={{ opacity, scale }}
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
+      {/* Aurora OGL Shader Background */}
+      <Aurora
+        colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
+        blend={0.5}
+        amplitude={1.0}
+        speed={0.5}
+      />
       {/* Dynamic time-based gradient background */}
       <div className={`absolute inset-0 bg-gradient-to-br ${timeGradient} transition-all duration-1000`} />
       
@@ -371,6 +381,7 @@ const AnimatedGlobeHero = () => {
             <motion.button
               whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(147, 51, 234, 0.5)" }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/command')}
               className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white font-bold text-lg relative overflow-hidden group"
             >
               <span className="relative z-10">Launch Command Center</span>

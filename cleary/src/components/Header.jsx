@@ -10,6 +10,7 @@ const Header = () => {
 
   const navItems = [
     { path: '/feed', label: 'Feed', icon: Newspaper },
+    { path: '/command', label: 'Command', icon: BarChart2 },
     { path: '/elections', label: 'Elections', icon: Vote },
     { path: '/dashboard', label: 'Insights', icon: BarChart2 },
     { path: '/videos', label: 'Videos', icon: Video },
