@@ -242,7 +242,7 @@ const LandingPage = () => {
 
                 <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
                   <MagneticButton
-                    onClick={() => navigate('/signup')}
+                    onClick={() => navigate('/command')}
                     variant="primary"
                     size="xl"
                     icon={ArrowRight}
