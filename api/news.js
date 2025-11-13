@@ -3,7 +3,7 @@ let fetch;
 try { fetch = require('node-fetch'); } catch { /* Node 18 runtime may have global fetch */ }
 const cheerio = require('cheerio');
 
-async function tryFetch(url, options = {}, timeoutMs = 4000) {
+async function tryFetch(url, options = {}, timeoutMs = 2500) {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), timeoutMs);
   try {

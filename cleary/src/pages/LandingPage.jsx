@@ -43,18 +43,18 @@ const LandingPage = () => {
 
   return (
     <div className="relative min-h-screen" style={{ background: '#000000' }}>
-      {/* Orb Background Effect */}
+      {/* Orb Background Effect - MAXIMIZED SENSITIVITY */}
       <div style={{
         position: 'fixed',
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '800px',
-        height: '800px',
+        width: '1200px',
+        height: '1200px',
         zIndex: 0,
         pointerEvents: 'none'
       }}>
-        <Orb hue={160} hoverIntensity={0.3} rotateOnHover={true} forceHoverState={false} />
+        <Orb hue={160} hoverIntensity={0.8} rotateOnHover={true} forceHoverState={true} />
       </div>
 
       {/* Header */}
