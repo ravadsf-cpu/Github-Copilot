@@ -69,13 +69,6 @@ const LandingPage = () => {
 
   return (
     <div className="relative bg-black min-h-screen overflow-hidden">
-      {/* Aurora OGL Shader Full-Page Background */}
-      <Aurora
-        colorStops={["#10B981", "#8B5CF6", "#6366F1"]}
-        blend={0.8}
-        amplitude={2.5}
-        speed={0.8}
-      />
       {/* Scroll Progress Indicator */}
       <ScrollProgress />
 
@@ -119,10 +112,18 @@ const LandingPage = () => {
         </div>
       </motion.header>
 
-  <AnimatedBackground mood="neutral">
-  <div ref={containerRef} className="relative">
-          
-          {/* HERO: Animated Globe Command Center */}
+      {/* Aurora OGL Shader Full-Page Background */}
+      <div className="fixed inset-0 z-0">
+        <Aurora
+          colorStops={["#10B981", "#8B5CF6", "#6366F1"]}
+          blend={0.8}
+          amplitude={2.5}
+          speed={0.8}
+        />
+      </div>
+
+      <AnimatedBackground mood="neutral">
+        <div ref={containerRef} className="relative z-10">          {/* HERO: Animated Globe Command Center */}
           <AnimatedGlobeHero />
 
           {/* SECTION: Streaming News Feed */}
