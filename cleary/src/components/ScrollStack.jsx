@@ -300,7 +300,15 @@ const ScrollStack = ({
     updateCardTransforms
   ]);
 
-  return (
+  return useWindowScroll ? (
+    <div className={`scroll-stack-window ${className}`.trim()} ref={scrollerRef}>
+      <div className="scroll-stack-inner">
+        {children}
+        {/* Spacer so the last pin can release cleanly */}
+        <div className="scroll-stack-end" />
+      </div>
+    </div>
+  ) : (
     <div className={`scroll-stack-scroller ${className}`.trim()} ref={scrollerRef}>
       <div className="scroll-stack-inner">
         {children}
