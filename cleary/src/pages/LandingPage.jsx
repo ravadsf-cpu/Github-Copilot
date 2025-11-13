@@ -114,6 +114,8 @@ const LandingPage = () => {
 
       {/* Aurora OGL Shader Full-Page Background */}
       <div className="fixed inset-0 z-0">
+        {/* CSS Gradient Fallback */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/30 via-purple-600/40 to-indigo-600/30 animate-gradient-shift" />
         <Aurora
           colorStops={["#10B981", "#8B5CF6", "#6366F1"]}
           blend={0.8}

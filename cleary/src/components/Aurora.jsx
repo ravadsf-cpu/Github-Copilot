@@ -224,12 +224,19 @@ export default function Aurora(props) {
     const ctn = ctnDom.current;
     if (!ctn) return;
 
-    const renderer = new Renderer({
-      alpha: true,
-      premultipliedAlpha: true,
-      antialias: true
-    });
-  const gl = renderer.gl;
+    let renderer, gl, program, mesh, animateId;
+
+    try {
+      renderer = new Renderer({
+        alpha: true,
+        premultipliedAlpha: true,
+        antialias: true
+      });
+      gl = renderer.gl;
+    } catch (error) {
+      console.error('Aurora: WebGL initialization failed', error);
+      return;
+    }
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -274,10 +281,16 @@ export default function Aurora(props) {
       }
     });
 
-    const mesh = new Mesh(gl, { geometry, program });
-    ctn.appendChild(gl.canvas);
+    mesh = new Mesh(gl, { geometry, program });
+    
+    try {
+      ctn.appendChild(gl.canvas);
+    } catch (error) {
+      console.error('Aurora: Failed to append canvas', error);
+      return;
+    }
 
-    let animateId = 0;
+    animateId = 0;
     const update = t => {
       animateId = requestAnimationFrame(update);
       const { time = t * 0.01, speed = 1.0 } = propsRef.current;
@@ -296,12 +309,14 @@ export default function Aurora(props) {
     resize();
 
     return () => {
-      cancelAnimationFrame(animateId);
+      if (animateId) cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
-      if (ctn && gl.canvas.parentNode === ctn) {
+      if (ctn && gl && gl.canvas && gl.canvas.parentNode === ctn) {
         ctn.removeChild(gl.canvas);
       }
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      if (gl) {
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amplitude]);
