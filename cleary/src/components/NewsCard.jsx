@@ -70,6 +70,7 @@ const NewsCard = ({ article, index }) => {
       
       <Link
         to={`/article/${encodeURIComponent(article.url || article.id)}`}
+        state={{ article }}
         onClick={handleClick}
         className="block relative"
       >
@@ -196,7 +197,7 @@ const NewsCard = ({ article, index }) => {
         })()}
 
         {/* Content */}
-        <div className="p-5 space-y-3">
+  <div className="p-5 space-y-3">
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span className="font-medium text-gray-300">
               {typeof article.source === 'string' ? article.source : article.source?.name || 'Unknown'}
@@ -211,7 +212,7 @@ const NewsCard = ({ article, index }) => {
             {article.title}
           </h3>
 
-          <p className="text-gray-400 text-sm line-clamp-3 leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed max-h-32 overflow-y-auto pr-1 custom-scroll">
             {article.summary || article.description}
           </p>
 

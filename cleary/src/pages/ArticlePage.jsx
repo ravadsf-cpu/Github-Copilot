@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, User, ExternalLink, Share2, Bookmark } from '../components/Icons';
 import TiltEmbed from '../components/TiltEmbed';
@@ -10,31 +10,59 @@ import { postInteraction } from '../utils/aiService';
 const ArticlePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialHydratedRef = useRef(false);
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
-    const loadArticle = async () => {
+    // 1. Instant hydration from navigation state for near-zero perceived load time
+    if (!initialHydratedRef.current && location.state?.article) {
+      setArticle(location.state.article);
+      setLoading(false); // Display immediately
+      initialHydratedRef.current = true;
+      // Fire-and-forget interaction logging
+      try { postInteraction(location.state.article); } catch {}
+    }
+
+    // 2. Background fetch to refresh/full data with timeout < 2300ms
+    const controller = new AbortController();
+    const timeoutMs = 2300;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const fetchFresh = async () => {
       try {
-        // Fetch article from NewsAPI or cache
-        const res = await fetch(`/api/news`);
+        const res = await fetch(`/api/news`, { signal: controller.signal });
+        if (!res.ok) throw new Error('Network error');
         const data = await res.json();
         const found = data.articles.find(a => encodeURIComponent(a.url) === id || a.id === id);
         if (found) {
-          setArticle(found);
-          await postInteraction(found);
-          // Removed blocking enrichment - will load asynchronously in background
+          setArticle(prev => ({ ...found, summary: prev?.summary || found.summary }));
+          // Interaction already posted if hydrated from state; ensure once
+          if (!initialHydratedRef.current) {
+            try { postInteraction(found); } catch {}
+          }
         }
       } catch (e) {
-        console.error('Failed to load article', e);
+        if (e.name === 'AbortError') {
+          console.warn('Article fetch aborted after timeout', timeoutMs);
+        } else {
+          console.error('Failed to refresh article', e);
+        }
       } finally {
-        setLoading(false);
+        // If we never hydrated from state, end loading now
+        if (!initialHydratedRef.current) setLoading(false);
       }
     };
-    loadArticle();
-  }, [id]);
+    fetchFresh();
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [id, location.state]);
 
   // Improve auto-generation context: set document title and meta description
   useEffect(() => {
@@ -91,12 +119,20 @@ const ArticlePage = () => {
   };
 
   if (loading) {
+    // Skeleton for sub-3s perceived load
     return (
       <AnimatedBackground>
         <Header />
-        <div className="h-screen flex items-center justify-center">
-          <div className="text-white">Loading article...</div>
-        </div>
+        <main className="container mx-auto px-6 pt-24 pb-12 max-w-4xl animate-pulse">
+          <div className="mb-6 h-6 w-32 bg-white/10 rounded" />
+          <div className="h-8 w-3/4 bg-white/10 rounded mb-4" />
+          <div className="h-96 w-full bg-white/5 rounded-2xl mb-8" />
+          <div className="space-y-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-5 w-full bg-white/5 rounded" />
+            ))}
+          </div>
+        </main>
       </AnimatedBackground>
     );
   }
