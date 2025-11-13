@@ -17,25 +17,28 @@ const TiltEmbed = ({ apiKey, theme = 'midnight', className = '' }) => {
     if (!apiKey) return;
 
     // Ensure our container has the attributes some versions of the embed look for
-    if (containerRef.current) {
-      containerRef.current.setAttribute('data-project-key', apiKey);
-      containerRef.current.classList.add('tilt-debate');
+    const containerEl = containerRef.current;
+    if (containerEl) {
+      containerEl.setAttribute('data-project-key', apiKey);
+      containerEl.classList.add('tilt-debate');
     }
 
     // If a prior embed script exists that matches, don't add duplicates; let it mount into our container
     const existing = Array.from(document.querySelectorAll('script'))
       .find(s => s.src && s.src.includes('data.tilt.vote/tilt-embed.js'));
 
+    let createdScript = null;
     const attachScript = () => {
       const script = document.createElement('script');
       script.async = true;
       script.src = 'https://data.tilt.vote/tilt-embed.js';
       script.setAttribute('data-api-key', apiKey);
       if (theme) script.setAttribute('data-theme', theme);
-      // Keep a ref so we can clean up on unmount
+      // Keep references for cleanup
       scriptRef.current = script;
+      createdScript = script;
       // Insert right after container for locality
-      const parent = containerRef.current?.parentElement || document.body;
+      const parent = containerEl?.parentElement || document.body;
       parent.appendChild(script);
     };
 
@@ -48,12 +51,12 @@ const TiltEmbed = ({ apiKey, theme = 'midnight', className = '' }) => {
 
     return () => {
       // Clean up: remove our script tag (do not remove global ones we didn't create)
-      if (scriptRef.current && scriptRef.current.parentNode) {
-        scriptRef.current.parentNode.removeChild(scriptRef.current);
+      if (createdScript && createdScript.parentNode) {
+        createdScript.parentNode.removeChild(createdScript);
       }
       // Also clear the container contents to unmount widget UI
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      if (containerEl) {
+        containerEl.innerHTML = '';
       }
     };
   }, [apiKey, theme]);

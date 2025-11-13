@@ -6,7 +6,7 @@ import NewsCard from '../components/NewsCard';
 import { fetchNews } from '../utils/aiService';
 import { useApp } from '../contexts/AppContext';
 import { motion } from 'framer-motion';
-import { Globe2, Zap, Film, Filter, RefreshCcw, Video, LayoutGrid, Search, Flame } from '../components/Icons';
+import { Globe2, Zap, Filter, RefreshCcw, Video, LayoutGrid, Search, Flame } from '../components/Icons';
 
 // Command Center: unified high-density dashboard for power users
 const QUICK_CATEGORIES = [
@@ -35,7 +35,8 @@ const CommandCenterPage = () => {
     setLoading(false);
   }, [category, strategy]);
 
-  useEffect(() => { loadArticles({ category }); }, [category, strategy, refreshKey]);
+  // Include loadArticles in dependencies to satisfy exhaustive-deps and ensure correctness
+  useEffect(() => { loadArticles({ category }); }, [loadArticles, category, refreshKey]);
 
   const handleAIArticles = (aiArticles, cat) => {
     setAiInjected({ articles: aiArticles, category: cat });

@@ -12,7 +12,7 @@ const ArticlePage = () => {
   const navigate = useNavigate();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [iframeErrors, setIframeErrors] = useState({});
+  // Removed unused iframe error tracking to satisfy CI lint rules
 
   useEffect(() => {
     const loadArticle = async () => {
