@@ -12,7 +12,8 @@ const ArticlePage = () => {
   const navigate = useNavigate();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
-  // Removed unused iframe error tracking to satisfy CI lint rules
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     const loadArticle = async () => {
@@ -24,44 +25,7 @@ const ArticlePage = () => {
         if (found) {
           setArticle(found);
           await postInteraction(found);
-          // If no videos present, try enriching from the source page
-          try {
-            const missingVideos = !found.media || !found.media.videos || found.media.videos.length === 0;
-            const missingImage = !(found.urlToImage || found.image || (found.media && found.media.images && found.media.images.length > 0));
-            if (missingVideos || missingImage) {
-              const enr = await fetch(`/api/article?url=${encodeURIComponent(found.url)}`);
-              if (enr.ok) {
-                const extra = await enr.json();
-                setArticle(prev => {
-                  if (!prev) return prev;
-                  const prevImages = prev.media?.images || [];
-                  const prevVideos = prev.media?.videos || [];
-                  const newImages = extra.media?.images || [];
-                  const newVideos = extra.media?.videos || [];
-                  // Dedup by src
-                  const dedup = (arr) => {
-                    const seen = new Set();
-                    return arr.filter(x => {
-                      const key = typeof x === 'string' ? x : x.src;
-                      if (!key || seen.has(key)) return false;
-                      seen.add(key); return true;
-                    });
-                  };
-                  return {
-                    ...prev,
-                    urlToImage: prev.urlToImage || newImages[0]?.src || prev.urlToImage,
-                    contentHtml: prev.contentHtml || extra.contentHtml || prev.contentHtml,
-                    media: {
-                      images: dedup([...(prevImages || []), ...(newImages || [])]),
-                      videos: dedup([...(prevVideos || []), ...(newVideos || [])]),
-                    }
-                  };
-                });
-              }
-            }
-          } catch (enrichErr) {
-            console.warn('Media enrichment failed', enrichErr);
-          }
+          // Removed blocking enrichment - will load asynchronously in background
         }
       } catch (e) {
         console.error('Failed to load article', e);
@@ -93,6 +57,38 @@ const ArticlePage = () => {
       if (meta && prevMeta !== null) meta.setAttribute('content', prevMeta);
     };
   }, [article]);
+
+  // Generate AI summary on demand
+  const handleGenerateSummary = async () => {
+    if (!article || article.summary || generatingSummary) return;
+    
+    setGeneratingSummary(true);
+    try {
+      // Call your AI service to generate summary
+      const res = await fetch('/api/article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: article.url,
+          title: article.title,
+          content: article.content || article.description
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setArticle(prev => ({
+          ...prev,
+          summary: data.summary || 'Summary generated successfully.'
+        }));
+        setShowSummary(true);
+      }
+    } catch (err) {
+      console.error('Failed to generate summary', err);
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -218,8 +214,35 @@ const ArticlePage = () => {
             ) : null;
           })()}
 
-          {/* AI Summary */}
-          {article.summary && (
+          {/* AI Summary - on demand generation */}
+          {!article.summary && !showSummary ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-8"
+            >
+              <button
+                onClick={handleGenerateSummary}
+                disabled={generatingSummary}
+                className="w-full p-6 rounded-2xl bg-gradient-to-br from-purple-600/10 to-pink-600/10 border border-purple-500/20 hover:from-purple-600/20 hover:to-pink-600/20 transition-all disabled:opacity-50"
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  {generatingSummary ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin"></div>
+                      <span className="text-purple-400 font-semibold">Generating AI Summary...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-purple-400">✨</span>
+                      <span className="text-white font-semibold">Click to Generate AI Summary</span>
+                    </>
+                  )}
+                </div>
+              </button>
+            </motion.div>
+          ) : (article.summary || showSummary) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
