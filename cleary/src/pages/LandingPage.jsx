@@ -67,12 +67,24 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden" style={{ background: 'radial-gradient(circle at center, #0a0118, #000000)' }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ background: '#000000' }}>
       {/* Scroll Progress Indicator */}
       <ScrollProgress />
 
       {/* Animated Aurora Background - Pure CSS */}
       <div className="aurora-bg"></div>
+      
+      {/* DEBUG: Test visible layer */}
+      <div style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        width: '100%', 
+        height: '100%', 
+        background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.4) 0%, rgba(139, 92, 246, 0.4) 50%, transparent 100%)',
+        zIndex: 1,
+        pointerEvents: 'none'
+      }}></div>
 
       {/* Premium Sticky Header */}
       <motion.header
