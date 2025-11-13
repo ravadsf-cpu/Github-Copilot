@@ -104,7 +104,7 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
       <canvas
         ref={canvasRef}
         className="fixed inset-0 w-full h-full"
-        style={{ zIndex: 2, opacity: 0.3, mixBlendMode: 'screen' }}
+        style={{ zIndex: -1, opacity: 0.15, mixBlendMode: 'screen' }}
       />
       <motion.div
         initial={{ opacity: 0 }}
