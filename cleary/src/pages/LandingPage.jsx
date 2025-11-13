@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Brain, Shield, Zap, TrendingUp, Sparkles, ArrowRight } from '../components/Icons';
+import Orb from '../components/Orb';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -42,21 +43,19 @@ const LandingPage = () => {
 
   return (
     <div className="relative min-h-screen" style={{ background: '#000000' }}>
-      {/* Aurora Background */}
-      <div className="aurora-bg"></div>
-      
-      {/* MEGA TEST OVERLAY - DELETE AFTER CONFIRMING */}
+      {/* Orb Background Effect */}
       <div style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.6), rgba(34, 211, 238, 0.6), rgba(139, 92, 246, 0.6))',
-        zIndex: 1,
-        pointerEvents: 'none',
-        animation: 'pulse 3s ease-in-out infinite'
-      }}></div>
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '800px',
+        height: '800px',
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}>
+        <Orb hue={160} hoverIntensity={0.3} rotateOnHover={true} forceHoverState={false} />
+      </div>
 
       {/* Header */}
       <motion.header
