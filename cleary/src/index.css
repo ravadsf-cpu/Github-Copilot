@@ -56,7 +56,7 @@
   bottom: -50%;
   width: 200%;
   height: 200%;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
 }
 
@@ -70,9 +70,9 @@
 
 .aurora-bg::before {
   background: radial-gradient(ellipse at top left, 
-    rgba(16, 185, 129, 0.4) 0%,
-    rgba(139, 92, 246, 0.3) 40%,
-    rgba(99, 102, 241, 0.2) 70%,
+    rgba(16, 185, 129, 0.6) 0%,
+    rgba(139, 92, 246, 0.5) 40%,
+    rgba(99, 102, 241, 0.4) 70%,
     transparent 100%);
   animation: aurora-move 20s ease-in-out infinite, aurora-hue 15s ease-in-out infinite;
   filter: blur(60px);
@@ -80,9 +80,9 @@
 
 .aurora-bg::after {
   background: radial-gradient(ellipse at bottom right,
-    rgba(34, 211, 238, 0.3) 0%,
-    rgba(168, 85, 247, 0.4) 40%,
-    rgba(59, 130, 246, 0.2) 70%,
+    rgba(34, 211, 238, 0.5) 0%,
+    rgba(168, 85, 247, 0.6) 40%,
+    rgba(59, 130, 246, 0.4) 70%,
     transparent 100%);
   animation: aurora-move-reverse 25s ease-in-out infinite, aurora-hue 20s ease-in-out infinite reverse;
   filter: blur(80px);

@@ -114,21 +114,6 @@ const LandingPage = () => {
         </div>
       </motion.header>
 
-      {/* Aurora OGL Shader Full-Page Background */}
-      <div className="fixed inset-0 z-0">
-        {/* CSS Gradient Fallback - Green to Purple animated */}
-        <div className="absolute inset-0 opacity-60">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 via-purple-500 to-indigo-500 animate-gradient-shift blur-3xl" />
-          <div className="absolute inset-0 bg-gradient-to-tl from-green-500 via-violet-600 to-blue-600 animate-gradient-shift-reverse blur-2xl" />
-        </div>
-        <Aurora
-          colorStops={["#10B981", "#8B5CF6", "#6366F1"]}
-          blend={0.8}
-          amplitude={2.5}
-          speed={0.8}
-        />
-      </div>
-
       <AnimatedBackground mood="neutral">
         <div ref={containerRef} className="relative z-10">          {/* HERO: Animated Globe Command Center */}
           <AnimatedGlobeHero />
