@@ -50,6 +50,15 @@
   left: -50%;
 }
 
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
 .aurora-bg::before {
   background: radial-gradient(circle at 30% 30%, 
     rgb(16, 185, 129) 0%,

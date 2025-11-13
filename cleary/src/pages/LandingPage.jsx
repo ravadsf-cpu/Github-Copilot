@@ -6,9 +6,6 @@ import { Brain, Shield, Zap, TrendingUp, Sparkles, ArrowRight } from '../compone
 const LandingPage = () => {
   const navigate = useNavigate();
 
-const LandingPage = () => {
-  const navigate = useNavigate();
-
   const features = [
     {
       icon: Zap,
@@ -47,6 +44,19 @@ const LandingPage = () => {
     <div className="relative min-h-screen" style={{ background: '#000000' }}>
       {/* Aurora Background */}
       <div className="aurora-bg"></div>
+      
+      {/* MEGA TEST OVERLAY - DELETE AFTER CONFIRMING */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.6), rgba(34, 211, 238, 0.6), rgba(139, 92, 246, 0.6))',
+        zIndex: 1,
+        pointerEvents: 'none',
+        animation: 'pulse 3s ease-in-out infinite'
+      }}></div>
 
       {/* Header */}
       <motion.header
