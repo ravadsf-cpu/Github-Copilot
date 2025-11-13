@@ -68,11 +68,11 @@ const LandingPage = () => {
 
   return (
     <div className="relative bg-black min-h-screen overflow-hidden">
-      {/* Animated Aurora Background - Pure CSS */}
-      <div className="aurora-bg"></div>
-      
       {/* Scroll Progress Indicator */}
       <ScrollProgress />
+
+      {/* Animated Aurora Background - Pure CSS */}
+      <div className="aurora-bg"></div>
 
       {/* Premium Sticky Header */}
       <motion.header

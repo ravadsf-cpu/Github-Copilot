@@ -103,13 +103,15 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
     <div className="relative min-h-screen overflow-hidden">
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 w-full h-full -z-10"
+        className="fixed inset-0 w-full h-full"
+        style={{ zIndex: 2, opacity: 0.3, mixBlendMode: 'screen' }}
       />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative z-0"
+        className="relative"
+        style={{ zIndex: 10 }}
       >
         {children}
       </motion.div>
