@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, User, ExternalLink, Share2, Bookmark } from '../components/Icons';
+import TiltEmbed from '../components/TiltEmbed';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Header from '../components/Header';
 import { postInteraction } from '../utils/aiService';
@@ -70,6 +71,28 @@ const ArticlePage = () => {
     };
     loadArticle();
   }, [id]);
+
+  // Improve auto-generation context: set document title and meta description
+  useEffect(() => {
+    if (!article) return;
+    const prevTitle = document.title;
+    document.title = `${article.title || 'Article'} — Cleary`;
+
+    let meta = document.querySelector('meta[name="description"]');
+    const prevMeta = meta ? meta.getAttribute('content') : null;
+    const desc = article.description || article.summary || '';
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    if (desc) meta.setAttribute('content', desc);
+
+    return () => {
+      document.title = prevTitle;
+      if (meta && prevMeta !== null) meta.setAttribute('content', prevMeta);
+    };
+  }, [article]);
 
   if (loading) {
     return (
@@ -484,6 +507,15 @@ const ArticlePage = () => {
               )}
             </div>
           </motion.article>
+
+          {/* Tilt debate embed (auto-generation mode) */}
+          <div className="mt-12">
+            <h2 className="text-xl font-semibold text-white mb-4">Debate this article</h2>
+            <p className="text-gray-400 mb-4">
+              Join the discussion. The widget below creates a debate automatically from this page's context.
+            </p>
+            <TiltEmbed apiKey="tilt_N61DPyzbaYJOIDAO2z-3VN-UZA2TzWpt3WOXrAoIE_4" theme="midnight" />
+          </div>
 
           {/* Read more at source button */}
           {article.url && (
