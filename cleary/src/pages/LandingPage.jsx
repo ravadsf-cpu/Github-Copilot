@@ -2,7 +2,6 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import AnimatedGlobeHero from '../components/AnimatedGlobeHero';
-import Aurora from '../components/Aurora';
 import StreamingNewsFeed from '../components/StreamingNewsFeed';
 import BiasDetectionDashboard from '../components/BiasDetectionDashboard';
 import LiveNewsVisualization from '../components/LiveNewsVisualization';
@@ -69,6 +68,9 @@ const LandingPage = () => {
 
   return (
     <div className="relative bg-black min-h-screen overflow-hidden">
+      {/* Animated Aurora Background - Pure CSS */}
+      <div className="aurora-bg"></div>
+      
       {/* Scroll Progress Indicator */}
       <ScrollProgress />
 
