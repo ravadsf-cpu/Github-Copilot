@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ElectionMap from '../components/ElectionMap';
 import CityMap from '../components/CityMap';
-import { TrendingUp, MapPin, Users, Clock, Building2, Landmark, Sun, Moon } from 'lucide-react';
+import { TrendingUp, MapPin, Users, Clock, Building2, Landmark, Sun, Moon } from '../components/Icons';
 import { useTheme } from '../contexts/ThemeContext';
 
 const ElectionPage = () => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
-import { Globe, Zap, Shield, TrendingUp } from 'lucide-react';
+import { Globe, Zap, Shield, TrendingUp } from './Icons';
 import { useNavigate } from 'react-router-dom';
 
 const AnimatedGlobeHero = () => {

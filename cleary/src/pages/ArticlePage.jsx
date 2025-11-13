@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Clock, User, ExternalLink, Share2, Bookmark } from 'lucide-react';
+import { ArrowLeft, Clock, User, ExternalLink, Share2, Bookmark } from '../components/Icons';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Header from '../components/Header';
 import { postInteraction } from '../utils/aiService';

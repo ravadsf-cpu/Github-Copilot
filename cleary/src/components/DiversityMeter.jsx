@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Scale, Lightbulb } from 'lucide-react';
+import { TrendingUp, Scale, Lightbulb } from './Icons';
 import { getAdaptiveRecommendation } from '../utils/adaptiveLearning';
 
 export default function DiversityMeter({ articles = [] }) {

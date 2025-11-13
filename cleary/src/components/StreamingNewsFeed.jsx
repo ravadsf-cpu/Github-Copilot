@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, TrendingUp, AlertCircle } from 'lucide-react';
+import { Zap, TrendingUp, AlertCircle } from './Icons';
 
 const newsItems = [
   { id: 1, title: "Federal Reserve Signals Potential Rate Cut in December Meeting", source: "Reuters", urgency: "high", category: "Economics" },

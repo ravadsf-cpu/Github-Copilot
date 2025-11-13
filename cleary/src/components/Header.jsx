@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Newspaper, BarChart2, Video, User, LogOut, Vote } from 'lucide-react';
+import { Newspaper, BarChart2, Video, User, LogOut, Vote } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {

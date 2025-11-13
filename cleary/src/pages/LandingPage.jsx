@@ -8,7 +8,7 @@ import LiveNewsVisualization from '../components/LiveNewsVisualization';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MagneticButton from '../components/MagneticButton';
 import ScrollProgress from '../components/ScrollProgress';
-import { Brain, Shield, Zap, TrendingUp, Target, Sparkles, Users, Award, Play, ArrowRight } from 'lucide-react';
+import { Brain, Shield, Zap, TrendingUp, Target, Sparkles, Users, Award, Play, ArrowRight } from '../components/Icons';
 
 const LandingPage = () => {
   const navigate = useNavigate();

@@ -6,7 +6,7 @@ import NewsCard from '../components/NewsCard';
 import { fetchNews } from '../utils/aiService';
 import { useApp } from '../contexts/AppContext';
 import { motion } from 'framer-motion';
-import { Globe2, Zap, Film, Filter, RefreshCcw, Video, LayoutGrid, Search, Flame } from 'lucide-react';
+import { Globe2, Zap, Film, Filter, RefreshCcw, Video, LayoutGrid, Search, Flame } from '../components/Icons';
 
 // Command Center: unified high-density dashboard for power users
 const QUICK_CATEGORIES = [

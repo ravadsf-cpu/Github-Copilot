@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { Activity } from 'lucide-react';
+import { Activity } from './Icons';
 
 const ScrollProgress = () => {
   const { scrollYProgress } = useScroll();

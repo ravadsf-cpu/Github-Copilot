@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, Loader2, ArrowRight, TrendingUp, Newspaper } from 'lucide-react';
+import { Sparkles, Send, Loader2, ArrowRight, TrendingUp, Newspaper } from './Icons';
 
 const AISection = ({ onAskNews }) => {
   const [question, setQuestion] = useState('');

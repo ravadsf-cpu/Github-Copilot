@@ -4,7 +4,7 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import Header from '../components/Header';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { User, Mail, Settings, Shield, Bell, Palette } from 'lucide-react';
+import { User, Mail, Settings, Shield, Bell, Palette } from '../components/Icons';
 
 const ProfilePage = () => {
   const { user } = useAuth();

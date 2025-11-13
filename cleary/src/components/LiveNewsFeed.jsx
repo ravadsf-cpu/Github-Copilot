@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, AlertCircle, Globe, Zap } from 'lucide-react';
+import { TrendingUp, AlertCircle, Globe, Zap } from './Icons';
 
 const LiveNewsFeed = () => {
   const [articles, setArticles] = useState([]);

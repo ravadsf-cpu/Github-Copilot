@@ -9,7 +9,7 @@ import AISection from '../components/AISection';
 import { mockArticles } from '../utils/mockData';
 import { fetchNews, getLean } from '../utils/aiService';
 import { useApp } from '../contexts/AppContext';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter } from '../components/Icons';
 
 const FeedPage = () => {
   const [articles, setArticles] = useState([]);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Shield, Sparkles } from 'lucide-react';
+import { Activity, Shield, Sparkles } from './Icons';
 
 const LiveNewsVisualization = () => {
   const [biasMetrics, setBiasMetrics] = useState([]);

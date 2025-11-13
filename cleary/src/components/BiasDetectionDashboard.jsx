@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Shield, Target, Zap, TrendingUp } from 'lucide-react';
+import { Shield, Target, Zap, TrendingUp } from './Icons';
 
 const BiasDetectionDashboard = () => {
   const ref = useRef(null);

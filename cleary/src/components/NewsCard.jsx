@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Clock, Bookmark, Share2, ExternalLink, Info } from 'lucide-react';
+import { Clock, Bookmark, Share2, ExternalLink, Info } from './Icons';
 import { useApp } from '../contexts/AppContext';
 import { postInteraction } from '../utils/aiService';
 

@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import AnimatedBackground from '../components/AnimatedBackground';
 import Header from '../components/Header';
 import { useApp } from '../contexts/AppContext';
-import { Brain, TrendingUp, Clock, Heart } from 'lucide-react';
+import { Brain, TrendingUp, Clock, Heart } from '../components/Icons';
 
 const DashboardPage = () => {
   const { readingHistory, userPreferences } = useApp();

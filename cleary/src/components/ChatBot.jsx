@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, X, Sparkles, Settings } from 'lucide-react';
+import { MessageCircle, Send, X, Sparkles, Settings } from './Icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
