@@ -237,6 +237,7 @@ export default function Aurora(props) {
       console.error('Aurora: WebGL initialization failed', error);
       return;
     }
+    
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -245,7 +246,7 @@ export default function Aurora(props) {
     gl.canvas.style.opacity = '0.9';
     gl.canvas.style.position = 'absolute';
     gl.canvas.style.top = '0px';
-    gl.canvas.style.left = '0px';    let program;
+    gl.canvas.style.left = '0px';
 
     function resize() {
       if (!ctn) return;
