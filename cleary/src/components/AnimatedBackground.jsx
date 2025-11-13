@@ -17,7 +17,7 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
     canvas.height = window.innerHeight;
 
     const particles = [];
-    const particleCount = 80; // More particles for richer effect
+    const particleCount = 200; // MAXED: More particles for ultra-rich effect
     
     const moodColor = moodColors[activeMood]?.bgPrimary || '#111827';
 
@@ -25,17 +25,17 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 4 + 1;
-        this.speedX = Math.random() * 0.5 - 0.25;
-        this.speedY = Math.random() * 0.5 - 0.25;
-        this.opacity = Math.random() * 0.6 + 0.2;
+        this.size = Math.random() * 6 + 2; // MAXED: Larger particles (was 4+1)
+        this.speedX = Math.random() * 1.5 - 0.75; // MAXED: Faster movement (was 0.5-0.25)
+        this.speedY = Math.random() * 1.5 - 0.75; // MAXED: Faster movement
+        this.opacity = Math.random() * 0.9 + 0.3; // MAXED: Higher opacity (was 0.6+0.2)
         this.pulse = Math.random() * Math.PI * 2; // For pulsing effect
       }
 
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
-        this.pulse += 0.02; // Animate pulse
+        this.pulse += 0.05; // MAXED: Faster pulse animation (was 0.02)
 
         if (this.x > canvas.width) this.x = 0;
         if (this.x < 0) this.x = canvas.width;
@@ -46,8 +46,8 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
       draw() {
         const pulseOpacity = this.opacity * (0.7 + Math.sin(this.pulse) * 0.3);
         
-        // Glow effect
-        ctx.shadowBlur = 15;
+        // MAXED: Stronger glow effect (was 15)
+        ctx.shadowBlur = 25;
         ctx.shadowColor = `rgba(255, 255, 255, ${pulseOpacity})`;
         
         ctx.fillStyle = `rgba(255, 255, 255, ${pulseOpacity})`;
@@ -104,7 +104,7 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
       <canvas
         ref={canvasRef}
         className="fixed inset-0 w-full h-full"
-        style={{ zIndex: 2, opacity: 0.1, mixBlendMode: 'screen', pointerEvents: 'none' }}
+        style={{ zIndex: 2, opacity: 0.35, mixBlendMode: 'screen', pointerEvents: 'none' }}
       />
       <motion.div
         initial={{ opacity: 0 }}
