@@ -114,8 +114,11 @@ const LandingPage = () => {
 
       {/* Aurora OGL Shader Full-Page Background */}
       <div className="fixed inset-0 z-0">
-        {/* CSS Gradient Fallback */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/30 via-purple-600/40 to-indigo-600/30 animate-gradient-shift" />
+        {/* CSS Gradient Fallback - Green to Purple animated */}
+        <div className="absolute inset-0 opacity-60">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 via-purple-500 to-indigo-500 animate-gradient-shift blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-tl from-green-500 via-violet-600 to-blue-600 animate-gradient-shift-reverse blur-2xl" />
+        </div>
         <Aurora
           colorStops={["#10B981", "#8B5CF6", "#6366F1"]}
           blend={0.8}
