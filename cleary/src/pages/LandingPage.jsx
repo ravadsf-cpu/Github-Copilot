@@ -67,7 +67,7 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="relative bg-black min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden" style={{ background: 'radial-gradient(circle at center, #0a0118, #000000)' }}>
       {/* Scroll Progress Indicator */}
       <ScrollProgress />
 
