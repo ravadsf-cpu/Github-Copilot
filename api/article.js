@@ -6,7 +6,7 @@ try { fetch = require('node-fetch'); } catch { /* Vercel Node 18 has global fetc
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -14,6 +14,18 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Support POST for summary generation
+    if (req.method === 'POST') {
+      const { summarizeWithAI } = require('./_lib/shared');
+      let body = {};
+      try { body = typeof req.body === 'object' ? req.body : JSON.parse(req.body || '{}'); } catch {}
+      const { title, content } = body || {};
+      const text = [title || '', content || ''].join('\n\n').trim();
+      if (!text) return res.status(400).json({ error: 'Missing content to summarize' });
+      const summary = await summarizeWithAI(text, 220);
+      return res.status(200).json({ summary });
+    }
+
     const url = req.query.url || req.query.u;
     if (!url) return res.status(400).json({ error: 'Missing url parameter' });
 
@@ -87,10 +99,42 @@ module.exports = async (req, res) => {
     let contentHtml = '';
     const articleEl = $('article');
     if (articleEl.length) {
-      contentHtml = sanitizeHtml(articleEl.html() || '', { allowedTags: [], allowedAttributes: {} });
+      contentHtml = sanitizeHtml(articleEl.html() || '', {
+        allowedTags: [
+          'p','br','em','strong','b','i','u','a','ul','ol','li','blockquote',
+          'img','figure','figcaption','h1','h2','h3','h4','pre','code','span','div','iframe'
+        ],
+        allowedAttributes: {
+          a: ['href','name','target','rel'],
+          img: ['src','alt','title','width','height','srcset','sizes','loading'],
+          iframe: ['src','width','height','allow','allowfullscreen','frameborder','title'],
+          '*': ['style']
+        },
+        allowedIframeHostnames: ['www.youtube.com', 'player.vimeo.com'],
+        transformTags: {
+          a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer', target: '_blank' })
+        }
+      });
     } else {
       const mainEl = $('main');
-      if (mainEl.length) contentHtml = sanitizeHtml(mainEl.html() || '', { allowedTags: [], allowedAttributes: {} });
+      if (mainEl.length) {
+        contentHtml = sanitizeHtml(mainEl.html() || '', {
+          allowedTags: [
+            'p','br','em','strong','b','i','u','a','ul','ol','li','blockquote',
+            'img','figure','figcaption','h1','h2','h3','h4','pre','code','span','div','iframe'
+          ],
+          allowedAttributes: {
+            a: ['href','name','target','rel'],
+            img: ['src','alt','title','width','height','srcset','sizes','loading'],
+            iframe: ['src','width','height','allow','allowfullscreen','frameborder','title'],
+            '*': ['style']
+          },
+          allowedIframeHostnames: ['www.youtube.com', 'player.vimeo.com'],
+          transformTags: {
+            a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer', target: '_blank' })
+          }
+        });
+      }
     }
 
     // Dedup by src

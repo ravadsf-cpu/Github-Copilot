@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Shield, TrendingUp, ArrowRight, Globe2, Newspaper, Activity, MapPin, Award } from '../components/Icons';
+import { Shield, ArrowRight, Globe2, Newspaper, Activity } from '../components/Icons';
 import CardSwap, { Card } from '../components/CardSwap';
 import Orb from '../components/Orb';
 

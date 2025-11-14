@@ -44,6 +44,43 @@ const ArticlePage = () => {
           if (!initialHydratedRef.current) {
             try { postInteraction(found); } catch {}
           }
+          // If content is thin, attempt targeted enrichment of this article's HTML/media
+          try {
+            const needsEnrich = !found.contentHtml || (found.contentHtml && found.contentHtml.length < 300);
+            if (found.url && needsEnrich) {
+              const ctrl2 = new AbortController();
+              const id2 = setTimeout(() => ctrl2.abort(), 2000);
+              const enr = await fetch(`/api/article?url=${encodeURIComponent(found.url)}`, { signal: ctrl2.signal });
+              clearTimeout(id2);
+              if (enr.ok) {
+                const j = await enr.json();
+                setArticle(prev => ({
+                  ...prev,
+                  contentHtml: j.contentHtml || prev?.contentHtml,
+                  media: {
+                    images: [
+                      ...(prev?.media?.images || []),
+                      ...((j.media?.images || []).map(u => (typeof u === 'string' ? { src: u } : u)))
+                    ].filter((v, idx, arr) => {
+                      const s = typeof v === 'string' ? v : v.src;
+                      if (!s) return false;
+                      return arr.findIndex(x => (typeof x === 'string' ? x : x.src) === s) === idx;
+                    }),
+                    videos: [
+                      ...(prev?.media?.videos || []),
+                      ...((j.media?.videos || []))
+                    ].filter((v, idx, arr) => {
+                      const s = v && v.src;
+                      if (!s) return false;
+                      return arr.findIndex(x => x && x.src === s) === idx;
+                    })
+                  }
+                }));
+              }
+            }
+          } catch (e) {
+            // best-effort enrichment; ignore errors
+          }
         }
       } catch (e) {
         if (e.name === 'AbortError') {

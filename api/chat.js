@@ -112,7 +112,7 @@ module.exports = async (req, res) => {
         filled.push(...worldMore.slice(0, 5 - filled.length));
       }
 
-      if (filled.length) {
+  if (filled.length) {
         // Stronger personalization: reorder by preference and politicalLean if provided
         const norm = (l) => ({ 'left': -1, 'lean-left': -0.5, 'center': 0, 'lean-right': 0.5, 'right': 1 }[l] ?? 0);
         const desired = typeof politicalLean === 'string' ? norm(politicalLean) : null;
@@ -129,11 +129,14 @@ module.exports = async (req, res) => {
         }
 
         const header = pickHeader() || 'Top world stories:';
-        const bullets = ordered.slice(0,5).map((a, i) => {
+        const topList = ordered.slice(0,5);
+        const bullets = topList.map((a, i) => {
           const leanTag = a._lean?.label ? ` [Lean: ${a._lean.label}]` : '';
           return `${i+1}. ${a.title}${leanTag} — ${a.source?.name || ''}\n${a.url}`;
         }).join('\n\n');
-        return res.status(200).json({ response: `${header}\n\n${bullets}`, category: 'world' });
+        // Strip helper fields before returning
+        const articlesOut = topList.map(({ _lean, ...rest }) => rest);
+        return res.status(200).json({ response: `${header}\n\n${bullets}`, category: 'world', articles: articlesOut });
       }
     }
 
@@ -163,9 +166,10 @@ module.exports = async (req, res) => {
       top.sort((x,y) => Math.abs(norm(x._lean.label) - desired) - Math.abs(norm(y._lean.label) - desired));
     }
     if (top.length) {
-      const bullets = top.map((a, i) => `${i+1}. ${a.title}${a._lean?.label ? ` [Lean: ${a._lean.label}]` : ''} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
       const header = category === 'breaking' ? 'Top breaking stories:' : `Top ${category} stories:`;
-      return res.status(200).json({ response: `${header}\n\n${bullets}` });
+      const bullets = top.map((a, i) => `${i+1}. ${a.title}${a._lean?.label ? ` [Lean: ${a._lean.label}]` : ''} — ${a.source?.name || ''}\n${a.url}`).join('\n\n');
+      const articlesOut = top.map(({ _lean, ...rest }) => rest);
+      return res.status(200).json({ response: `${header}\n\n${bullets}`, category, articles: articlesOut });
     }
 
     // Last resort generic

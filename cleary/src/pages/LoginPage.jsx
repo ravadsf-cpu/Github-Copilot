@@ -6,7 +6,7 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import RippleButton from '../components/RippleButton';
 
 const LoginPage = () => {
-  const { loginWithGoogle, loginAsGuest, isDemoMode } = useAuth();
+  const { loginWithGoogle, loginAsGuest, isDemoMode, loginLocal } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,16 +21,10 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      // Allow sign in with any email/password for now
+      // Allow sign in with any email/password for now (demo/local mode)
       if (email && password) {
-        // Create a mock user session
-        localStorage.setItem('cleary_user', JSON.stringify({
-          email,
-          displayName: email.split('@')[0],
-          uid: 'local-' + Date.now(),
-          timestamp: Date.now()
-        }));
-        navigate('/feed');
+        await loginLocal({ email });
+        navigate('/feed', { replace: true });
       } else {
         throw new Error('Please enter email and password');
       }

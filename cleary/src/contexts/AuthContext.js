@@ -19,7 +19,26 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!auth) {
-      // Demo mode: keep unauthenticated until user chooses guest
+      // Demo mode: try local session rehydration if present
+      try {
+        const raw = localStorage.getItem('cleary_user');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && (parsed.email || parsed.displayName || parsed.name)) {
+            setUser({
+              id: parsed.uid || 'local',
+              email: parsed.email || null,
+              name: parsed.displayName || parsed.name || (parsed.email ? parsed.email.split('@')[0] : 'User'),
+              photoURL: parsed.photoURL || null,
+              preferences: parsed.preferences || {
+                mood: 'balanced',
+                topics: ['technology', 'science', 'world'],
+                politicalLean: 'centrist'
+              }
+            });
+          }
+        }
+      } catch {}
       setLoading(false);
       return () => {};
     }
@@ -73,6 +92,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     if (!auth) {
       setUser(null);
+      try { localStorage.removeItem('cleary_user'); } catch {}
       return Promise.resolve();
     }
     return signOut(auth);
@@ -94,6 +114,31 @@ export const AuthProvider = ({ children }) => {
     return guestUser;
   };
 
+  // Local/demo login helper for when Firebase auth is not configured
+  const loginLocal = async ({ email, name }) => {
+    const localUser = {
+      id: 'local-' + Date.now(),
+      email: email || null,
+      name: name || (email ? email.split('@')[0] : 'User'),
+      photoURL: null,
+      preferences: {
+        mood: 'balanced',
+        topics: ['technology', 'science', 'world'],
+        politicalLean: 'centrist'
+      }
+    };
+    setUser(localUser);
+    try {
+      localStorage.setItem('cleary_user', JSON.stringify({
+        email: localUser.email,
+        displayName: localUser.name,
+        uid: localUser.id,
+        timestamp: Date.now()
+      }));
+    } catch {}
+    return localUser;
+  };
+
   const value = {
     user,
     login,
@@ -102,7 +147,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     loading,
     isDemoMode,
-    loginAsGuest
+    loginAsGuest,
+    loginLocal
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

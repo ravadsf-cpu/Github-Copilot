@@ -239,8 +239,23 @@ async function fetchFromRSS(category = 'breaking') {
         const thumbUrl = getUrlish(item['media:thumbnail']) || getUrlish(item['media:group']?.['media:thumbnail']);
         if (thumbUrl) images.push({ src: thumbUrl });
         
-        // Now sanitize for display
-        const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
+        // Now sanitize for display (preserve safe formatting and media)
+        const contentHtml = fullContent ? sanitizeHtml(fullContent, {
+          allowedTags: [
+            'p','br','em','strong','b','i','u','a','ul','ol','li','blockquote',
+            'img','figure','figcaption','h1','h2','h3','h4','pre','code','span','div','iframe'
+          ],
+          allowedAttributes: {
+            a: ['href','name','target','rel'],
+            img: ['src','alt','title','width','height','srcset','sizes','loading'],
+            iframe: ['src','width','height','allow','allowfullscreen','frameborder','title'],
+            '*': ['style']
+          },
+          allowedIframeHostnames: ['www.youtube.com', 'player.vimeo.com'],
+          transformTags: {
+            a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer', target: '_blank' })
+          }
+        }) : '';
         const cleanContent = stripHtml(fullContent);
 
         return {
@@ -299,8 +314,23 @@ async function fetchFromFeeds(feedUrls = []) {
         const thumbUrl2 = getUrlish(item['media:thumbnail']) || getUrlish(item['media:group']?.['media:thumbnail']);
         if (thumbUrl2) images.push({ src: thumbUrl2 });
         
-        // Now sanitize for display
-        const contentHtml = fullContent ? sanitizeHtml(fullContent, { allowedTags: [], allowedAttributes: {} }) : '';
+        // Now sanitize for display (preserve safe formatting and media)
+        const contentHtml = fullContent ? sanitizeHtml(fullContent, {
+          allowedTags: [
+            'p','br','em','strong','b','i','u','a','ul','ol','li','blockquote',
+            'img','figure','figcaption','h1','h2','h3','h4','pre','code','span','div','iframe'
+          ],
+          allowedAttributes: {
+            a: ['href','name','target','rel'],
+            img: ['src','alt','title','width','height','srcset','sizes','loading'],
+            iframe: ['src','width','height','allow','allowfullscreen','frameborder','title'],
+            '*': ['style']
+          },
+          allowedIframeHostnames: ['www.youtube.com', 'player.vimeo.com'],
+          transformTags: {
+            a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer', target: '_blank' })
+          }
+        }) : '';
         const cleanContent = stripHtml(fullContent);
 
         return {
