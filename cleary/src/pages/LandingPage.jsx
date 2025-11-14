@@ -134,6 +134,7 @@ const LandingPage = () => {
           >
             <h1 className="text-7xl md:text-[9rem] font-black mb-8 leading-none tracking-tight">
               <TextType 
+                as="span"
                 text={["CLEARY"]}
                 typingSpeed={100}
                 pauseDuration={3000}
