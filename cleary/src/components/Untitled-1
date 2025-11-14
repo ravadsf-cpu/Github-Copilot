@@ -1,0 +1,2 @@
+cd cleary/server
+node testSupabase.js

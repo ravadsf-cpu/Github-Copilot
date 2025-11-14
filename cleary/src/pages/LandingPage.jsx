@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Brain, Shield, Zap, TrendingUp, Sparkles, ArrowRight } from '../components/Icons';
+import { Shield, Zap, TrendingUp, ArrowRight, Globe2, Newspaper, Target } from '../components/Icons';
+import CardSwap, { Card } from '../components/CardSwap';
 import Orb from '../components/Orb';
 
 const LandingPage = () => {
@@ -15,9 +16,9 @@ const LandingPage = () => {
       gradient: 'from-emerald-400 to-cyan-400'
     },
     {
-      icon: Brain,
-      title: 'AI-Powered',
-      description: 'Intelligent analysis and summaries',
+      icon: Newspaper,
+      title: 'Smart Summaries',
+      description: 'Clear, concise takeaways on demand',
       gradient: 'from-purple-400 to-pink-400'
     },
     {
@@ -107,7 +108,7 @@ const LandingPage = () => {
               transition={{ delay: 0.2 }}
               className="mb-6"
             >
-              <Sparkles className="w-16 h-16 mx-auto text-emerald-400 mb-6" />
+              <Globe2 className="w-16 h-16 mx-auto text-emerald-400 mb-6" />
             </motion.div>
 
             <h1 className="text-7xl md:text-8xl font-black mb-6 leading-tight">
@@ -168,6 +169,26 @@ const LandingPage = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* CardSwap Showcase - subtle, bottom-right */}
+      <div className="pointer-events-none">
+        <div className="absolute bottom-8 right-8 z-20 hidden md:block pointer-events-auto" style={{ height: 600, width: 500 }}>
+          <CardSwap cardDistance={60} verticalDistance={70} delay={5000} pauseOnHover={false}>
+            <Card className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+              <h3 className="text-white text-xl font-bold mb-2">Unified Feed</h3>
+              <p className="text-white/70 text-sm">Top sources, one beautiful stream. No noise.</p>
+            </Card>
+            <Card className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+              <h3 className="text-white text-xl font-bold mb-2">Bias Insights</h3>
+              <p className="text-white/70 text-sm">See lean and credibility at a glance.</p>
+            </Card>
+            <Card className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+              <h3 className="text-white text-xl font-bold mb-2">Instant Summaries</h3>
+              <p className="text-white/70 text-sm">On-demand, readable recaps for any story.</p>
+            </Card>
+          </CardSwap>
+        </div>
+      </div>
 
       {/* Features Section */}
       <section className="relative z-10 py-24 px-6">
