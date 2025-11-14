@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
+import RippleGrid from '../components/RippleGrid';
+import { useTheme } from '../contexts/ThemeContext';
 import Header from '../components/Header';
 import NewsCard from '../components/NewsCard';
 import MoodSelector from '../components/MoodSelector';
@@ -14,6 +16,7 @@ import { Search, Filter } from '../components/Icons';
 
 const FeedPage = () => {
   const [articles, setArticles] = useState([]);
+  const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const { currentMood, userPreferences } = useApp();
   const [lean, setLean] = useState(null);
@@ -171,6 +174,18 @@ const FeedPage = () => {
 
   return (
     <AnimatedBackground>
+      {/* Theme-aware Ripple Grid background */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <RippleGrid
+          enableRainbow={false}
+          gridColor={theme === 'dark' ? '#ffffff' : '#000000'}
+          rippleIntensity={0.04}
+          gridSize={9.5}
+          gridThickness={14}
+          mouseInteraction={false}
+          opacity={theme === 'dark' ? 0.10 : 0.05}
+        />
+      </div>
       <Header />
       
       {/* Floating particles effect */}
@@ -230,8 +245,8 @@ const FeedPage = () => {
               className="mb-4 flex items-center justify-between"
             >
               <div>
-                <h2 className="text-2xl font-semibold text-white">AI Results</h2>
-                <p className="text-gray-400 text-sm">
+                <h2 className="text-2xl font-semibold">AI Results</h2>
+                <p className="text-sm text-black/60 dark:text-gray-400">
                   Found {aiArticles.articles.length} articles
                   {aiArticles.category && aiArticles.category !== 'breaking' && (
                     <span className="ml-2 px-2 py-1 rounded-full bg-purple-600/20 text-purple-300 text-xs">
@@ -242,7 +257,7 @@ const FeedPage = () => {
               </div>
               <button
                 onClick={() => setAiArticles(null)}
-                className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white transition-all text-sm"
+                className="px-4 py-2 rounded-lg theme-panel hover:opacity-90 transition-all text-sm"
               >
                 Clear AI Results
               </button>
@@ -263,7 +278,7 @@ const FeedPage = () => {
 
         {/* Recommended header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-2">
-          <h2 className="text-xl text-white/90">Recommended for you</h2>
+          <h2 className="text-xl">Recommended for you</h2>
         </motion.div>
         
         {/* Mood Selector */}
@@ -277,13 +292,13 @@ const FeedPage = () => {
         >
           <div className="flex-1 relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-black/40 dark:text-gray-400 z-10" />
             <input
               type="text"
               placeholder="Search articles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="relative w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+              className="relative w-full pl-12 pr-4 py-3 rounded-xl theme-input backdrop-blur-xl placeholder-black/40 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 transition-all"
             />
           </div>
 
@@ -291,7 +306,7 @@ const FeedPage = () => {
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: 'spring', ...springConfig }}
-            className="relative flex items-center space-x-2 px-6 py-3 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 transition-all group"
+            className="relative flex items-center space-x-2 px-6 py-3 rounded-xl theme-panel backdrop-blur-xl hover:opacity-90 transition-all group"
           >
             <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/10 rounded-xl blur-md transition-all" />
             <Filter className="w-5 h-5 relative z-10" />
@@ -303,7 +318,7 @@ const FeedPage = () => {
             whileTap={{ scale: 0.95 }}
             onClick={() => setViewMode(prev => prev === 'stack' ? 'grid' : 'stack')}
             transition={{ type: 'spring', ...springConfig }}
-            className="relative flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white transition-all group"
+            className="relative flex items-center space-x-2 px-6 py-3 rounded-xl theme-button transition-all group"
           >
             <span className="relative z-10">{viewMode === 'stack' ? 'Grid View' : 'Stack View'}</span>
           </motion.button>

@@ -189,6 +189,42 @@ code {
   color: #1f2937; /* slate-800 for light */
   line-height: 1.8;
 }
+
+/* Light-mode overrides to make legacy Tailwind classes readable without refactoring every component */
+/* Scope to light theme only (no .dark on html) */
+html:not(.dark) .bg-white\/5 { background-color: rgba(0,0,0,0.03) !important; }
+html:not(.dark) .bg-white\/10 { background-color: rgba(0,0,0,0.05) !important; }
+html:not(.dark) .bg-white\/20 { background-color: rgba(0,0,0,0.08) !important; }
+html:not(.dark) .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
+html:not(.dark) .border-white\/20 { border-color: rgba(0,0,0,0.15) !important; }
+html:not(.dark) .text-white { color: #111827 !important; }
+html:not(.dark) .text-white\/90 { color: rgba(0,0,0,0.9) !important; }
+html:not(.dark) .text-white\/70 { color: rgba(0,0,0,0.7) !important; }
+html:not(.dark) .text-gray-400 { color: rgba(0,0,0,0.6) !important; }
+
+/* Theme utility tokens for panels/inputs/buttons */
+:root {
+  --panel-bg: rgba(0,0,0,0.03);
+  --panel-border: rgba(0,0,0,0.12);
+  --input-bg: rgba(0,0,0,0.02);
+  --input-border: rgba(0,0,0,0.2);
+  --input-fg: #111827;
+  --btn-bg: #000000;
+  --btn-fg: #ffffff;
+}
+html.dark {
+  --panel-bg: rgba(255,255,255,0.05);
+  --panel-border: rgba(255,255,255,0.12);
+  --input-bg: rgba(255,255,255,0.06);
+  --input-border: rgba(255,255,255,0.16);
+  --input-fg: #ffffff;
+  --btn-bg: #ffffff;
+  --btn-fg: #000000;
+}
+
+.theme-panel { background: var(--panel-bg); border: 1px solid var(--panel-border); }
+.theme-input { background: var(--input-bg); border: 1px solid var(--input-border); color: var(--input-fg); }
+.theme-button { background: var(--btn-bg); color: var(--btn-fg); }
 html.dark .article-content {
   color: #d1d5db;
 }

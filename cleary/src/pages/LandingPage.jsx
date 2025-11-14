@@ -136,9 +136,11 @@ const LandingPage = () => {
               <TextType 
                 as="span"
                 text={["CLEARY"]}
-                typingSpeed={100}
+                typingSpeed={150}
+                initialDelay={150}
                 pauseDuration={3000}
-                showCursor={false}
+                showCursor={true}
+                cursorCharacter="|"
                 loop={false}
               />
             </h1>
@@ -209,11 +211,11 @@ const LandingPage = () => {
       {/* CardSwap Section - clean center focus */}
       <section className="relative z-10 py-40 lg:py-56 px-6 isolate min-h-[110vh]">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-24">
             <h2 className="text-5xl md:text-6xl font-bold mb-3">Preview</h2>
             <p className={`text-lg ${theme === 'dark' ? 'text-white/60' : 'text-black/60'}`}>Big cards. No clutter.</p>
           </div>
-          <div className="flex justify-center mt-10 md:mt-16">
+          <div className="flex justify-center mt-28 md:mt-32">
             <CardSwap
               variant="inline"
               width={760}
