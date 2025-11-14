@@ -42,7 +42,7 @@ const FeedPage = () => {
   }, []);
 
   const handleAskNews = (aiReturnedArticles, category) => {
-    // When AI returns articles, display them
+    // When AI returns articles, display them as a separate section (do not replace the feed)
     setAiArticles({ articles: aiReturnedArticles, category });
   };
 
@@ -84,8 +84,8 @@ const FeedPage = () => {
     article.summary.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Display AI articles if available, otherwise show regular filtered articles
-  const displayArticles = aiArticles ? aiArticles.articles : filteredArticles;
+  // Always keep the main feed visible; AI results render as a separate section
+  const displayArticles = filteredArticles;
 
   // Compute "Happening Now" headlines and trending topics from current articles
   const happeningNow = React.useMemo(() => {
@@ -221,42 +221,53 @@ const FeedPage = () => {
 
         {/* Happening Now now merged as the first items in the grid (no separate strip) */}
 
-        {/* Show AI results header if AI articles are displayed */}
-        {aiArticles && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex items-center justify-between"
-          >
-            <div>
-              <h2 className="text-2xl font-semibold text-white">AI Results</h2>
-              <p className="text-gray-400 text-sm">
-                Found {aiArticles.articles.length} articles
-                {aiArticles.category && aiArticles.category !== 'breaking' && (
-                  <span className="ml-2 px-2 py-1 rounded-full bg-purple-600/20 text-purple-300 text-xs">
-                    {aiArticles.category}
-                  </span>
-                )}
-              </p>
-            </div>
-            <button
-              onClick={() => setAiArticles(null)}
-              className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white transition-all text-sm"
+        {/* AI Results - render in their own section above the main feed */}
+        {aiArticles && aiArticles.articles?.length > 0 && (
+          <div className="mb-10">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 flex items-center justify-between"
             >
-              Clear AI Results
-            </button>
-          </motion.div>
+              <div>
+                <h2 className="text-2xl font-semibold text-white">AI Results</h2>
+                <p className="text-gray-400 text-sm">
+                  Found {aiArticles.articles.length} articles
+                  {aiArticles.category && aiArticles.category !== 'breaking' && (
+                    <span className="ml-2 px-2 py-1 rounded-full bg-purple-600/20 text-purple-300 text-xs">
+                      {aiArticles.category}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={() => setAiArticles(null)}
+                className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white transition-all text-sm"
+              >
+                Clear AI Results
+              </button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {aiArticles.articles.map((article, index) => (
+                <NewsCard key={`ai-${article.id || index}`} article={article} index={index} />
+              ))}
+            </motion.div>
+          </div>
         )}
 
-        {/* Recommended header - only show if not displaying AI results */}
-        {!aiArticles && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-2">
-            <h2 className="text-xl text-white/90">Recommended for you</h2>
-          </motion.div>
-        )}
+        {/* Recommended header */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-2">
+          <h2 className="text-xl text-white/90">Recommended for you</h2>
+        </motion.div>
         
-        {/* Mood Selector - only show if not displaying AI results */}
-        {!aiArticles && <MoodSelector />}
+        {/* Mood Selector */}
+        <MoodSelector />
 
         {/* Search and Filters with glow effects */}
         <motion.div

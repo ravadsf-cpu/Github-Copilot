@@ -3,81 +3,109 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Shield, ArrowRight, Globe2, Newspaper, Activity } from '../components/Icons';
 import CardSwap, { Card } from '../components/CardSwap';
-import Orb from '../components/Orb';
+import RippleGrid from '../components/RippleGrid';
+import TextType from '../components/TextType';
+import { useTheme } from '../contexts/ThemeContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
 
   const features = [
     {
       icon: Globe2,
       title: 'Global Sources',
-      description: 'Real‑time news from 2,500+ outlets',
-      gradient: 'from-emerald-400 to-cyan-400'
+      description: 'Real‑time news from 2,500+ outlets'
     },
     {
       icon: Newspaper,
       title: 'Smart Summaries',
-      description: 'Clear, concise takeaways on demand',
-      gradient: 'from-purple-400 to-pink-400'
+      description: 'Clear, concise takeaways on demand'
     },
     {
       icon: Shield,
       title: 'Bias Detection',
-      description: 'Transparent credibility ratings',
-      gradient: 'from-blue-400 to-indigo-400'
+      description: 'Transparent credibility ratings'
     },
     {
       icon: Activity,
       title: 'Trend Analysis',
-      description: 'Spot emerging stories instantly',
-      gradient: 'from-orange-400 to-amber-400'
+      description: 'Spot emerging stories instantly'
     }
   ];
 
   const stats = [
-    { label: 'Sources', value: '2,499+', gradient: 'from-emerald-400 to-cyan-400' },
-    { label: 'Articles', value: '9,867+', gradient: 'from-purple-400 to-pink-400' },
-    { label: 'Accuracy', value: '93%', gradient: 'from-blue-400 to-cyan-400' },
-    { label: 'Updates', value: '24/7', gradient: 'from-cyan-400 to-emerald-400' }
+    { label: 'Sources', value: '2,499+' },
+    { label: 'Articles', value: '9,867+' },
+    { label: 'Accuracy', value: '93%' },
+    { label: 'Updates', value: '24/7' }
   ];
 
   return (
-    <div className="relative min-h-screen" style={{ background: '#000000' }}>
-      {/* Orb Background Effect - MAXIMIZED SENSITIVITY */}
-      <div style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '1200px',
-        height: '1200px',
-        zIndex: 0,
-        pointerEvents: 'none'
-      }}>
-        <Orb hue={160} hoverIntensity={0.8} rotateOnHover={true} forceHoverState={true} />
+    <div className={`relative min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-black'}`}>
+      {/* RippleGrid Background */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <RippleGrid
+          enableRainbow={false}
+          gridColor={theme === 'dark' ? '#ffffff' : '#000000'}
+          rippleIntensity={0.05}
+          gridSize={10}
+          gridThickness={15}
+          mouseInteraction={true}
+          mouseInteractionRadius={1.2}
+          opacity={theme === 'dark' ? 0.15 : 0.08}
+        />
       </div>
 
       {/* Header */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10"
+        className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b transition-colors ${
+          theme === 'dark' ? 'bg-black/40 border-white/10' : 'bg-white/40 border-black/10'
+        }`}
       >
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="text-2xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent"
+            className="text-2xl font-extrabold tracking-tight"
           >
             CLEARY
           </motion.div>
           
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
+            {/* Theme Toggle */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggle}
+              className={`p-2 rounded-lg border transition ${
+                theme === 'dark' 
+                  ? 'border-white/15 text-white/80 hover:text-white hover:bg-white/5' 
+                  : 'border-black/15 text-black/80 hover:text-black hover:bg-black/5'
+              }`}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/login')}
-              className="px-6 py-2 text-white/80 hover:text-white transition"
+              className={`px-6 py-2 transition border rounded-lg ${
+                theme === 'dark' 
+                  ? 'text-white/80 hover:text-white border-white/15' 
+                  : 'text-black/80 hover:text-black border-black/15'
+              }`}
             >
               Log In
             </motion.button>
@@ -86,7 +114,9 @@ const LandingPage = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/signup')}
-              className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-lg font-medium shadow-lg shadow-emerald-500/50"
+              className={`px-6 py-2 rounded-lg font-semibold transition ${
+                theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'
+              }`}
             >
               Sign Up
             </motion.button>
@@ -95,34 +125,33 @@ const LandingPage = () => {
       </motion.header>
 
       {/* Hero Section */}
-  <section className="relative z-10 min-h-[120vh] flex items-center justify-center px-6 pt-28">
+  <section className="relative z-10 min-h-[140vh] flex items-center justify-center px-6 pt-28">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="mb-6"
-            >
-              <Globe2 className="w-16 h-16 mx-auto text-emerald-400 mb-6" />
-            </motion.div>
-
-            <h1 className="text-8xl md:text-9xl font-black mb-8 leading-tight">
-              <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                CLEARY
-              </span>
+            <h1 className="text-7xl md:text-[9rem] font-black mb-8 leading-none tracking-tight">
+              <TextType 
+                text={["CLEARY"]}
+                typingSpeed={100}
+                pauseDuration={3000}
+                showCursor={false}
+                loop={false}
+              />
             </h1>
 
-            <p className="text-3xl md:text-4xl text-white/90 mb-6 font-light">
-              Your Intelligent News Command Center
+            <p className={`text-2xl md:text-3xl mb-6 font-light tracking-tight ${
+              theme === 'dark' ? 'text-white/90' : 'text-black/90'
+            }`}>
+              Intelligent news. Minimal. Professional.
             </p>
 
-            <p className="text-lg text-white/60 mb-12 max-w-2xl mx-auto">
-              Real-time news analysis powered by AI. Unbiased, transparent, and beautifully designed.
+            <p className={`text-base md:text-lg mb-12 max-w-3xl mx-auto ${
+              theme === 'dark' ? 'text-white/60' : 'text-black/60'
+            }`}>
+              Real-time coverage from trusted sources with clean summaries and unbiased context — all in a distraction-free interface.
             </p>
 
             {/* Stats */}
@@ -134,12 +163,14 @@ const LandingPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 + index * 0.1 }}
                   whileHover={{ scale: 1.05, y: -5 }}
-                  className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6"
+                  className={`backdrop-blur-xl border rounded-2xl p-6 ${
+                    theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'
+                  }`}
                 >
-                  <div className={`text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent mb-1`}>
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-white/50 uppercase tracking-wider">
+                  <div className="text-3xl font-bold mb-1">{stat.value}</div>
+                  <div className={`text-sm uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-white/60' : 'text-black/60'
+                  }`}>
                     {stat.label}
                   </div>
                 </motion.div>
@@ -152,7 +183,9 @@ const LandingPage = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/command')}
-                className="group px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-semibold text-lg shadow-2xl shadow-emerald-500/50 flex items-center justify-center gap-2"
+                className={`group px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 ${
+                  theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'
+                }`}
               >
                 Launch Command Center
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -161,7 +194,9 @@ const LandingPage = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 backdrop-blur-xl bg-white/5 border border-white/20 text-white rounded-xl font-semibold text-lg hover:bg-white/10 transition"
+                className={`px-8 py-4 backdrop-blur-xl border rounded-xl font-semibold text-lg hover:bg-opacity-10 transition ${
+                  theme === 'dark' ? 'bg-white/5 border-white/20 text-white hover:bg-white' : 'bg-black/5 border-black/20 text-black hover:bg-black'
+                }`}
               >
                 Watch Demo
               </motion.button>
@@ -170,21 +205,21 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CardSwap Section */}
-      <section className="relative z-10 py-24 px-6">
+      {/* CardSwap Section - clean center focus */}
+      <section className="relative z-10 py-40 lg:py-56 px-6 isolate min-h-[110vh]">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-3">See It in Motion</h2>
-            <p className="text-white/60 text-lg">A quick preview of the experience</p>
+          <div className="text-center mb-16">
+            <h2 className="text-5xl md:text-6xl font-bold mb-3">Preview</h2>
+            <p className={`text-lg ${theme === 'dark' ? 'text-white/60' : 'text-black/60'}`}>Big cards. No clutter.</p>
           </div>
           <div className="flex justify-center">
             <CardSwap
               variant="inline"
-              width={540}
-              height={420}
-              cardDistance={60}
-              verticalDistance={70}
-              delay={5000}
+              width={760}
+              height={560}
+              cardDistance={120}
+              verticalDistance={130}
+              delay={9500}
               pauseOnHover={true}
               onCardClick={(i) => {
                 if (i === 0) navigate('/feed');
@@ -192,24 +227,30 @@ const LandingPage = () => {
                 else navigate('/command');
               }}
             >
-              <Card role="button" aria-label="Open Feed" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
-                <h3 className="text-white text-xl font-bold mb-2">Unified Feed</h3>
-                <p className="text-white/70 text-sm">Top sources, one beautiful stream. No noise.</p>
+              <Card role="button" aria-label="Open Feed" className={`backdrop-blur-xl border text-left p-6 ${
+                theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'
+              }`}>
+                <h3 className="text-xl font-bold mb-2">Unified Feed</h3>
+                <p className={theme === 'dark' ? 'text-white/70 text-sm' : 'text-black/70 text-sm'}>Top sources, one beautiful stream. No noise.</p>
               </Card>
-              <Card role="button" aria-label="Open Dashboard" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
-                <h3 className="text-white text-xl font-bold mb-2">Bias Insights</h3>
-                <p className="text-white/70 text-sm">See lean and credibility at a glance.</p>
+              <Card role="button" aria-label="Open Dashboard" className={`backdrop-blur-xl border text-left p-6 ${
+                theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'
+              }`}>
+                <h3 className="text-xl font-bold mb-2">Bias Insights</h3>
+                <p className={theme === 'dark' ? 'text-white/70 text-sm' : 'text-black/70 text-sm'}>See lean and credibility at a glance.</p>
               </Card>
-              <Card role="button" aria-label="Open Command Center" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
-                <h3 className="text-white text-xl font-bold mb-2">Instant Summaries</h3>
-                <p className="text-white/70 text-sm">On-demand, readable recaps for any story.</p>
+              <Card role="button" aria-label="Open Command Center" className={`backdrop-blur-xl border text-left p-6 ${
+                theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'
+              }`}>
+                <h3 className="text-xl font-bold mb-2">Instant Summaries</h3>
+                <p className={theme === 'dark' ? 'text-white/70 text-sm' : 'text-black/70 text-sm'}>On-demand, readable recaps for any story.</p>
               </Card>
             </CardSwap>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section - monochrome */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -218,10 +259,10 @@ const LandingPage = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-4">
+            <h2 className="text-5xl md:text-6xl font-bold mb-4">
               Platform Features
             </h2>
-            <p className="text-white/60 text-lg">
+            <p className={`text-lg ${theme === 'dark' ? 'text-white/60' : 'text-black/60'}`}>
               Beautiful, fast, and useful
             </p>
           </motion.div>
@@ -235,17 +276,23 @@ const LandingPage = () => {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -10, scale: 1.02 }}
-                className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-white/20 transition group"
+                className={`backdrop-blur-xl border rounded-2xl p-8 transition group ${
+                  theme === 'dark' 
+                    ? 'bg-white/5 border-white/10 hover:border-white/20' 
+                    : 'bg-black/5 border-black/10 hover:border-black/20'
+                }`}
               >
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-7 h-7 text-white" />
+                <div className={`w-14 h-14 rounded-xl border flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform ${
+                  theme === 'dark' ? 'bg-white/10 border-white/20' : 'bg-black/10 border-black/20'
+                }`}>
+                  <feature.icon className="w-7 h-7" />
                 </div>
                 
-                <h3 className="text-xl font-bold text-white mb-3">
+                <h3 className="text-xl font-bold mb-3">
                   {feature.title}
                 </h3>
                 
-                <p className="text-white/60">
+                <p className={theme === 'dark' ? 'text-white/60' : 'text-black/60'}>
                   {feature.description}
                 </p>
               </motion.div>
@@ -262,11 +309,11 @@ const LandingPage = () => {
           viewport={{ once: true }}
           className="max-w-4xl mx-auto text-center"
         >
-          <h2 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent mb-6">
+          <h2 className="text-5xl md:text-6xl font-bold mb-6">
             Ready to Transform Your News?
           </h2>
           
-          <p className="text-xl text-white/70 mb-10">
+          <p className={`text-xl mb-10 ${theme === 'dark' ? 'text-white/70' : 'text-black/70'}`}>
             Join thousands discovering intelligent, unbiased coverage
           </p>
 
@@ -274,20 +321,26 @@ const LandingPage = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/signup')}
-            className="px-10 py-5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold text-xl shadow-2xl shadow-emerald-500/50"
+            className={`px-10 py-5 rounded-xl font-bold text-xl ${
+              theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'
+            }`}
           >
             Get Started Free
           </motion.button>
 
-          <p className="text-white/40 text-sm mt-6">
+          <p className={`text-sm mt-6 ${theme === 'dark' ? 'text-white/40' : 'text-black/40'}`}>
             No credit card required • Free forever
           </p>
         </motion.div>
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 py-8 px-6">
-        <div className="max-w-6xl mx-auto text-center text-white/40 text-sm">
+      <footer className={`relative z-10 border-t py-8 px-6 ${
+        theme === 'dark' ? 'border-white/10' : 'border-black/10'
+      }`}>
+        <div className={`max-w-6xl mx-auto text-center text-sm ${
+          theme === 'dark' ? 'text-white/40' : 'text-black/40'
+        }`}>
           © 2025 Cleary. Intelligent news for everyone.
         </div>
       </footer>
