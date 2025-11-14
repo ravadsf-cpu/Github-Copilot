@@ -24,8 +24,10 @@
   top: 50%;
   left: 50%;
   border-radius: 12px;
-  border: 1px solid #fff;
-  background: #000;
+  /* Use CSS variables so pages can set theme-aware colors */
+  border: 1px solid var(--card-border, rgba(255,255,255,0.1));
+  background: var(--card-bg, rgba(0,0,0,0.85));
+  color: var(--card-fg, inherit);
 
   transform-style: preserve-3d;
   will-change: transform;

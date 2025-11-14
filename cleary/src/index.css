@@ -4,8 +4,8 @@
 
 /* Global styles */
 :root {
-  --bg-start: #060617;
-  --bg-end: #000000;
+  --bg-start: #ffffff;
+  --bg-end: #ffffff;
 }
 
 /* Aurora Background Effect - ULTRA VISIBLE */
@@ -110,11 +110,17 @@ html, body, #root {
 body {
   min-height: 100vh;
   margin: 0;
-  background: radial-gradient(circle at center, var(--bg-start), var(--bg-end));
-  color: white;
+  background: #ffffff;
+  color: #000000;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark theme overrides via ThemeContext adds .dark on html */
+html.dark body {
+  background: #000000;
+  color: #ffffff;
 }
 
 code {
@@ -180,8 +186,11 @@ code {
 
 /* Article content styles for sanitized HTML */
 .article-content {
-  color: #d1d5db;
+  color: #1f2937; /* slate-800 for light */
   line-height: 1.8;
+}
+html.dark .article-content {
+  color: #d1d5db;
 }
 
 .article-content p {
@@ -195,10 +204,18 @@ code {
 .article-content h4,
 .article-content h5,
 .article-content h6 {
-  color: #ffffff;
+  color: #111827; /* gray-900 for light */
   font-weight: 600;
   margin-top: 1.5rem;
   margin-bottom: 1rem;
+}
+html.dark .article-content h1,
+html.dark .article-content h2,
+html.dark .article-content h3,
+html.dark .article-content h4,
+html.dark .article-content h5,
+html.dark .article-content h6 {
+  color: #ffffff;
 }
 
 .article-content h1 { font-size: 2rem; }
@@ -206,22 +223,19 @@ code {
 .article-content h3 { font-size: 1.5rem; }
 .article-content h4 { font-size: 1.25rem; }
 
-.article-content a {
-  color: #a855f7;
-  text-decoration: underline;
-}
-
-.article-content a:hover {
-  color: #ec4899;
-}
+.article-content a { text-decoration: underline; color: #111827; }
+.article-content a:hover { color: #000000; }
+html.dark .article-content a { color: #e5e7eb; }
+html.dark .article-content a:hover { color: #ffffff; }
 
 .article-content img {
   max-width: 100%;
   height: auto;
   border-radius: 0.75rem;
   margin: 1.5rem 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
+html.dark .article-content img { border-color: rgba(255, 255, 255, 0.1); }
 
 .article-content ul,
 .article-content ol {
@@ -260,14 +274,20 @@ code {
 
 .article-content th,
 .article-content td {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   padding: 0.75rem;
   text-align: left;
 }
+html.dark .article-content th,
+html.dark .article-content td { border-color: rgba(255, 255, 255, 0.1); }
 
 .article-content th {
-  background: rgba(168, 85, 247, 0.1);
+  background: rgba(0, 0, 0, 0.04);
   font-weight: 600;
+  color: #111827;
+}
+html.dark .article-content th {
+  background: rgba(255, 255, 255, 0.06);
   color: #ffffff;
 }
 

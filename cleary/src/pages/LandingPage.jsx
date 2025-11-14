@@ -212,7 +212,7 @@ const LandingPage = () => {
             <h2 className="text-5xl md:text-6xl font-bold mb-3">Preview</h2>
             <p className={`text-lg ${theme === 'dark' ? 'text-white/60' : 'text-black/60'}`}>Big cards. No clutter.</p>
           </div>
-          <div className="flex justify-center">
+          <div className="flex justify-center mt-10 md:mt-16">
             <CardSwap
               variant="inline"
               width={760}
@@ -227,23 +227,44 @@ const LandingPage = () => {
                 else navigate('/command');
               }}
             >
-              <Card role="button" aria-label="Open Feed" className={`backdrop-blur-xl border text-left p-6 ${
-                theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'
-              }`}>
+              <Card
+                role="button"
+                aria-label="Open Feed"
+                className={`backdrop-blur-xl border text-left p-6`}
+                style={{
+                  '--card-bg': theme === 'dark' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)',
+                  '--card-border': theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
+                  '--card-fg': theme === 'dark' ? '#ffffff' : '#000000'
+                }}
+              >
                 <h3 className="text-xl font-bold mb-2">Unified Feed</h3>
-                <p className={theme === 'dark' ? 'text-white/70 text-sm' : 'text-black/70 text-sm'}>Top sources, one beautiful stream. No noise.</p>
+                <p className={`text-sm ${theme === 'dark' ? 'text-white/70' : 'text-black/70'}`}>Top sources, one beautiful stream. No noise.</p>
               </Card>
-              <Card role="button" aria-label="Open Dashboard" className={`backdrop-blur-xl border text-left p-6 ${
-                theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'
-              }`}>
+              <Card
+                role="button"
+                aria-label="Open Dashboard"
+                className={`backdrop-blur-xl border text-left p-6`}
+                style={{
+                  '--card-bg': theme === 'dark' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)',
+                  '--card-border': theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
+                  '--card-fg': theme === 'dark' ? '#ffffff' : '#000000'
+                }}
+              >
                 <h3 className="text-xl font-bold mb-2">Bias Insights</h3>
-                <p className={theme === 'dark' ? 'text-white/70 text-sm' : 'text-black/70 text-sm'}>See lean and credibility at a glance.</p>
+                <p className={`text-sm ${theme === 'dark' ? 'text-white/70' : 'text-black/70'}`}>See lean and credibility at a glance.</p>
               </Card>
-              <Card role="button" aria-label="Open Command Center" className={`backdrop-blur-xl border text-left p-6 ${
-                theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'
-              }`}>
+              <Card
+                role="button"
+                aria-label="Open Command Center"
+                className={`backdrop-blur-xl border text-left p-6`}
+                style={{
+                  '--card-bg': theme === 'dark' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)',
+                  '--card-border': theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
+                  '--card-fg': theme === 'dark' ? '#ffffff' : '#000000'
+                }}
+              >
                 <h3 className="text-xl font-bold mb-2">Instant Summaries</h3>
-                <p className={theme === 'dark' ? 'text-white/70 text-sm' : 'text-black/70 text-sm'}>On-demand, readable recaps for any story.</p>
+                <p className={`text-sm ${theme === 'dark' ? 'text-white/70' : 'text-black/70'}`}>On-demand, readable recaps for any story.</p>
               </Card>
             </CardSwap>
           </div>
