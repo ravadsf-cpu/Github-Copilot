@@ -36,6 +36,8 @@ const CardSwap = ({
   onCardClick,
   skewAmount = 6,
   easing = 'elastic',
+  variant = 'overlay', // 'overlay' | 'inline'
+  className = '',
   children
 }) => {
   const config =
@@ -192,8 +194,16 @@ const CardSwap = ({
       : child
   );
 
+  const containerClasses = [
+    'card-swap-container',
+    variant === 'inline' ? 'card-swap-inline' : '',
+    className
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div ref={container} className="card-swap-container" style={{ width, height }}>
+    <div ref={container} className={containerClasses} style={{ width, height }}>
       {rendered}
     </div>
   );

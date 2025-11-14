@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Zap, TrendingUp, ArrowRight, Globe2, Newspaper } from '../components/Icons';
+import { Shield, TrendingUp, ArrowRight, Globe2, Newspaper, Activity, MapPin, Award } from '../components/Icons';
 import CardSwap, { Card } from '../components/CardSwap';
 import Orb from '../components/Orb';
 
@@ -10,9 +10,9 @@ const LandingPage = () => {
 
   const features = [
     {
-      icon: Zap,
-      title: 'Lightning Fast',
-      description: 'Real-time news from 2,500+ sources',
+      icon: Globe2,
+      title: 'Global Sources',
+      description: 'Real‑time news from 2,500+ outlets',
       gradient: 'from-emerald-400 to-cyan-400'
     },
     {
@@ -28,10 +28,10 @@ const LandingPage = () => {
       gradient: 'from-blue-400 to-indigo-400'
     },
     {
-      icon: TrendingUp,
+      icon: Activity,
       title: 'Trend Analysis',
       description: 'Spot emerging stories instantly',
-      gradient: 'from-cyan-400 to-teal-400'
+      gradient: 'from-orange-400 to-amber-400'
     }
   ];
 
@@ -95,7 +95,7 @@ const LandingPage = () => {
       </motion.header>
 
       {/* Hero Section */}
-      <section className="relative z-10 min-h-screen flex items-center justify-center px-6 pt-20">
+  <section className="relative z-10 min-h-[120vh] flex items-center justify-center px-6 pt-28">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -111,13 +111,13 @@ const LandingPage = () => {
               <Globe2 className="w-16 h-16 mx-auto text-emerald-400 mb-6" />
             </motion.div>
 
-            <h1 className="text-7xl md:text-8xl font-black mb-6 leading-tight">
+            <h1 className="text-8xl md:text-9xl font-black mb-8 leading-tight">
               <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
                 CLEARY
               </span>
             </h1>
 
-            <p className="text-2xl md:text-3xl text-white/90 mb-4 font-light">
+            <p className="text-3xl md:text-4xl text-white/90 mb-6 font-light">
               Your Intelligent News Command Center
             </p>
 
@@ -126,7 +126,7 @@ const LandingPage = () => {
             </p>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
               {stats.map((stat, index) => (
                 <motion.div
                   key={index}
@@ -170,35 +170,44 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CardSwap Showcase - subtle, bottom-right */}
-      <div aria-hidden className="pointer-events-none">
-        <div className="absolute bottom-8 right-8 z-20 pointer-events-auto" style={{ height: 600, width: 500 }}>
-          <CardSwap
-            cardDistance={60}
-            verticalDistance={70}
-            delay={5000}
-            pauseOnHover={true}
-            onCardClick={(i) => {
-              if (i === 0) navigate('/feed');
-              else if (i === 1) navigate('/dashboard');
-              else navigate('/command');
-            }}
-          >
-            <Card role="button" aria-label="Open Feed" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
-              <h3 className="text-white text-xl font-bold mb-2">Unified Feed</h3>
-              <p className="text-white/70 text-sm">Top sources, one beautiful stream. No noise.</p>
-            </Card>
-            <Card role="button" aria-label="Open Dashboard" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
-              <h3 className="text-white text-xl font-bold mb-2">Bias Insights</h3>
-              <p className="text-white/70 text-sm">See lean and credibility at a glance.</p>
-            </Card>
-            <Card role="button" aria-label="Open Command Center" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
-              <h3 className="text-white text-xl font-bold mb-2">Instant Summaries</h3>
-              <p className="text-white/70 text-sm">On-demand, readable recaps for any story.</p>
-            </Card>
-          </CardSwap>
+      {/* CardSwap Section */}
+      <section className="relative z-10 py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-3">See It in Motion</h2>
+            <p className="text-white/60 text-lg">A quick preview of the experience</p>
+          </div>
+          <div className="flex justify-center">
+            <CardSwap
+              variant="inline"
+              width={540}
+              height={420}
+              cardDistance={60}
+              verticalDistance={70}
+              delay={5000}
+              pauseOnHover={true}
+              onCardClick={(i) => {
+                if (i === 0) navigate('/feed');
+                else if (i === 1) navigate('/dashboard');
+                else navigate('/command');
+              }}
+            >
+              <Card role="button" aria-label="Open Feed" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+                <h3 className="text-white text-xl font-bold mb-2">Unified Feed</h3>
+                <p className="text-white/70 text-sm">Top sources, one beautiful stream. No noise.</p>
+              </Card>
+              <Card role="button" aria-label="Open Dashboard" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+                <h3 className="text-white text-xl font-bold mb-2">Bias Insights</h3>
+                <p className="text-white/70 text-sm">See lean and credibility at a glance.</p>
+              </Card>
+              <Card role="button" aria-label="Open Command Center" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+                <h3 className="text-white text-xl font-bold mb-2">Instant Summaries</h3>
+                <p className="text-white/70 text-sm">On-demand, readable recaps for any story.</p>
+              </Card>
+            </CardSwap>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Features Section */}
       <section className="relative z-10 py-24 px-6">

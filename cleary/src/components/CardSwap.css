@@ -8,6 +8,17 @@
   overflow: visible;
 }
 
+/* Inline variant for dedicated sections */
+.card-swap-inline {
+  position: relative;
+  bottom: auto;
+  right: auto;
+  left: auto;
+  transform: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .card {
   position: absolute;
   top: 50%;
@@ -28,6 +39,9 @@
     bottom: 1.5rem;
     right: 1.5rem;
   }
+  .card-swap-inline {
+    transform: scale(0.95);
+  }
 }
 
 @media (max-width: 768px) {
@@ -36,6 +50,9 @@
     bottom: 1rem;
     right: 1rem;
   }
+  .card-swap-inline {
+    transform: scale(0.85);
+  }
 }
 
 @media (max-width: 480px) {
@@ -43,5 +60,8 @@
     transform: scale(0.55);
     bottom: 0.75rem;
     right: 0.75rem;
+  }
+  .card-swap-inline {
+    transform: scale(0.75);
   }
 }
