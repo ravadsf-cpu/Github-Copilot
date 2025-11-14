@@ -71,8 +71,14 @@ const CardSwap = ({
   const container = useRef(null);
 
   useEffect(() => {
+    const reduceMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const total = refs.length;
     refs.forEach((r, i) => placeNow(r.current, makeSlot(i, cardDistance, verticalDistance, total), skewAmount));
+
+    if (reduceMotion) {
+      return; // Respect user setting: no animation/interval
+    }
 
     const swap = () => {
       if (order.current.length < 2) return;
@@ -135,6 +141,18 @@ const CardSwap = ({
     swap();
     intervalRef.current = window.setInterval(swap, delay);
 
+    // Pause when tab not visible to save resources
+    const handleVisibility = () => {
+      if (document.hidden) {
+        tlRef.current?.pause();
+        clearInterval(intervalRef.current);
+      } else {
+        tlRef.current?.play();
+        intervalRef.current = window.setInterval(swap, delay);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     if (pauseOnHover) {
       const node = container.current;
       const pause = () => {
@@ -153,7 +171,10 @@ const CardSwap = ({
         clearInterval(intervalRef.current);
       };
     }
-    return () => clearInterval(intervalRef.current);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(intervalRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, easing]);
 

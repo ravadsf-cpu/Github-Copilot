@@ -171,18 +171,28 @@ const LandingPage = () => {
       </section>
 
       {/* CardSwap Showcase - subtle, bottom-right */}
-      <div className="pointer-events-none">
-        <div className="absolute bottom-8 right-8 z-20 hidden md:block pointer-events-auto" style={{ height: 600, width: 500 }}>
-          <CardSwap cardDistance={60} verticalDistance={70} delay={5000} pauseOnHover={false}>
-            <Card className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+      <div aria-hidden className="pointer-events-none">
+        <div className="absolute bottom-8 right-8 z-20 pointer-events-auto" style={{ height: 600, width: 500 }}>
+          <CardSwap
+            cardDistance={60}
+            verticalDistance={70}
+            delay={5000}
+            pauseOnHover={true}
+            onCardClick={(i) => {
+              if (i === 0) navigate('/feed');
+              else if (i === 1) navigate('/dashboard');
+              else navigate('/command');
+            }}
+          >
+            <Card role="button" aria-label="Open Feed" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
               <h3 className="text-white text-xl font-bold mb-2">Unified Feed</h3>
               <p className="text-white/70 text-sm">Top sources, one beautiful stream. No noise.</p>
             </Card>
-            <Card className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+            <Card role="button" aria-label="Open Dashboard" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
               <h3 className="text-white text-xl font-bold mb-2">Bias Insights</h3>
               <p className="text-white/70 text-sm">See lean and credibility at a glance.</p>
             </Card>
-            <Card className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
+            <Card role="button" aria-label="Open Command Center" className="backdrop-blur-xl bg-white/5 border border-white/10 text-left p-6">
               <h3 className="text-white text-xl font-bold mb-2">Instant Summaries</h3>
               <p className="text-white/70 text-sm">On-demand, readable recaps for any story.</p>
             </Card>
@@ -200,10 +210,10 @@ const LandingPage = () => {
             className="text-center mb-16"
           >
             <h2 className="text-5xl md:text-6xl font-bold text-white mb-4">
-              Intelligence Features
+              Platform Features
             </h2>
             <p className="text-white/60 text-lg">
-              Cutting-edge AI meets beautiful design
+              Beautiful, fast, and useful
             </p>
           </motion.div>
 
