@@ -1,1 +1,17 @@
+# Ignore environment secrets
+.env
+.env.local
+.env.*
+!.env.example
+
+# Node artifacts
+node_modules/
+*.log
+
+# Build outputs
+cleary/build/
+dist/
+
+# OS files
+.DS_Store
 .vercel

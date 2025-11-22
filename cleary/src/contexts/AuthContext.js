@@ -7,7 +7,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { auth, isDemoMode } from '../config/firebase';
+import { auth, isDemoMode, isFirebaseConfigured } from '../config/firebase';
 
 const AuthContext = createContext();
 
@@ -37,6 +37,37 @@ export const AuthProvider = ({ children }) => {
               }
             });
           }
+        }
+        // Attempt server-side session restore (cookie-based JWT) if no local user loaded yet
+        if (!user) {
+          (async () => {
+            try {
+              const resp = await fetch('/api/auth/me', {
+                credentials: 'include' // Ensure cookies are sent
+              });
+              if (resp.ok) {
+                const json = await resp.json();
+                if (json.authenticated && json.user) {
+                  setUser({
+                    id: json.user.id,
+                    email: json.user.email,
+                    name: json.user.name || (json.user.email ? json.user.email.split('@')[0] : 'User'),
+                    photoURL: json.user.photoURL || json.user.picture || null,
+                    preferences: {
+                      mood: 'balanced',
+                      topics: ['technology', 'science', 'world'],
+                      politicalLean: 'centrist'
+                    }
+                  });
+                }
+              }
+            } catch (err) {
+              console.warn('[Auth] Failed to restore session:', err);
+            } finally {
+              setLoading(false);
+            }
+          })();
+          return () => {};
         }
       } catch {}
       setLoading(false);
@@ -71,15 +102,123 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGoogle = async () => {
-    if (!auth) throw new Error('Authentication is not configured');
-    const provider = new GoogleAuthProvider();
+    // HARD RULE: Unless Firebase explicitly configured & enabled, force server OAuth to avoid stale service worker / build using old Firebase setup.
+    const shouldUseFirebase = auth && isFirebaseConfigured && !isDemoMode;
+    if (shouldUseFirebase) {
+      const provider = new GoogleAuthProvider();
+      try {
+        const result = await signInWithPopup(auth, provider);
+        return result.user;
+      } catch (e) {
+        console.error('[Firebase auth error]', e);
+        const hint = 'If Google Sign-In fails, enable Identity Toolkit API and Google provider in Firebase, and add your domain to Authorized Domains.';
+        throw new Error(`${e.message}. ${hint}`);
+      }
+    }
+    // Fallback: server-side OAuth (default path in demo mode / hard disabled / missing env vars)
     try {
-      const result = await signInWithPopup(auth, provider);
-      return result.user;
+      const resp = await fetch('/api/auth/google/login');
+      if (!resp.ok) {
+        const json = await resp.json().catch(() => ({}));
+        // Show user-friendly setup message
+        if (json.error === 'oauth_not_configured') {
+          throw new Error(json.message || 'Google Sign-In is not set up yet. Check the console for setup instructions or use guest mode.');
+        }
+        throw new Error(json.message || 'Server OAuth configuration error. Contact administrator.');
+      }
+      const { url } = await resp.json();
+      if (!url) throw new Error('Server OAuth not available. Missing configuration.');
+      
+      // Check if popup is already open
+      let existingPopup = null;
+      try {
+        existingPopup = window.open('', 'cleary_google_login');
+        if (existingPopup && !existingPopup.closed && existingPopup.location.href !== 'about:blank') {
+          existingPopup.focus();
+          throw new Error('A login window is already open. Please complete or close it first.');
+        }
+      } catch (e) {
+        // Popup might be from different origin, ignore
+      }
+      
+      // Open popup window
+      const w = window.open(url, 'cleary_google_login', 'width=500,height=600,left=100,top=100');
+      if (!w || w.closed || typeof w.closed === 'undefined') {
+        throw new Error('Popup blocked by browser. Please allow popups for this site and try again.');
+      }
+      
+      // Await message from popup with timeout and error handling
+      const authData = await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          window.removeEventListener('message', handler);
+          if (w && !w.closed) {
+            try { w.close(); } catch {}
+          }
+          reject(new Error('Google login timed out after 2 minutes. Please try again.'));
+        }, 120000);
+        
+        const handler = (event) => {
+          // Handle error from popup
+          if (event.data && event.data.type === 'cleary-google-login-error') {
+            clearTimeout(timeout);
+            window.removeEventListener('message', handler);
+            reject(new Error('Login failed: ' + (event.data.error || 'Unknown error')));
+            return;
+          }
+          
+          // Handle success from popup
+          if (!event.data || event.data.type !== 'cleary-google-login') return;
+          clearTimeout(timeout);
+          window.removeEventListener('message', handler);
+          resolve(event.data.data);
+        };
+        
+        window.addEventListener('message', handler);
+        
+        // Check if popup was closed by user
+        const checkClosed = setInterval(() => {
+          if (w.closed) {
+            clearInterval(checkClosed);
+            clearTimeout(timeout);
+            window.removeEventListener('message', handler);
+            reject(new Error('Login cancelled. Popup was closed.'));
+          }
+        }, 500);
+      });
+      
+      const profile = authData.profile;
+      if (!profile || !profile.email) {
+        throw new Error('Invalid response from Google. Please try again.');
+      }
+      
+      const localUser = {
+        id: profile.id || ('google-' + Date.now()),
+        email: profile.email,
+        name: profile.name || profile.email.split('@')[0],
+        photoURL: profile.picture || null,
+        preferences: {
+          mood: 'balanced',
+          topics: ['technology', 'science', 'world'],
+          politicalLean: 'centrist'
+        }
+      };
+      setUser(localUser);
+      try {
+        localStorage.setItem('cleary_user', JSON.stringify({
+          email: localUser.email,
+          displayName: localUser.name,
+          uid: localUser.id,
+          picture: localUser.photoURL,
+          provider: 'google-oauth',
+          timestamp: Date.now()
+        }));
+      } catch (storageErr) {
+        console.warn('[Auth] Failed to save to localStorage:', storageErr);
+      }
+      return localUser;
     } catch (e) {
-      // Provide clearer error for blocked Identity Toolkit
-      const hint = 'If Google Sign-In fails, enable Identity Toolkit API and Google provider in Firebase, and add your domain to Authorized Domains.';
-      throw new Error(`${e.message}. ${hint}`);
+      console.error('[Google OAuth error]', e);
+      throw new Error(e.message || 'Failed to sign in with Google. Please try again.');
     }
   };
 
@@ -89,10 +228,19 @@ export const AuthProvider = ({ children }) => {
     return result.user;
   };
 
-  const logout = () => {
+  const logout = async () => {
     if (!auth) {
       setUser(null);
       try { localStorage.removeItem('cleary_user'); } catch {}
+      // Inform backend to clear cookie if present
+      try {
+        await fetch('/api/auth/logout', { 
+          method: 'POST',
+          credentials: 'include' 
+        });
+      } catch (err) {
+        console.warn('[Auth] Failed to clear server session:', err);
+      }
       return Promise.resolve();
     }
     return signOut(auth);
