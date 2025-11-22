@@ -1,19 +1,24 @@
 {
-  // Monorepo deployment: build the React app in cleary/, serve serverless functions in api/
-  "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node" },
-    { "src": "cleary/package.json", "use": "@vercel/static-build" }
-  ],
-  // Ensure the React build output is recognized
+  "buildCommand": "bash build.sh",
   "outputDirectory": "cleary/build",
-  // Disable Firebase auth unless explicitly enabled via env var at build time
-  "env": {
-    "REACT_APP_ENABLE_FIREBASE_AUTH": "false"
-  },
-  // Routes: allow API functions, then fall back to SPA routing
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-     { "src": "/(.*)", "dest": "/cleary/build/index.html" }
+  "installCommand": "npm install && cd cleary && npm install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
-  "github": { "silent": false }
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "github": {
+    "silent": false
+  }
 }
