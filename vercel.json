@@ -13,7 +13,7 @@
   // Routes: allow API functions, then fall back to SPA routing
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/index.html" }
+     { "src": "/(.*)", "dest": "/cleary/build/index.html" }
   ],
   "github": { "silent": false }
 }
