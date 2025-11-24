@@ -86,7 +86,33 @@ module.exports = async (req, res) => {
   try {
   const { category = 'breaking', preference = 'balanced', query, userLean } = req.query;
     
-    let articles = await fetchFromRSS(category);
+    let articles = [];
+    try {
+      articles = await Promise.race([
+        fetchFromRSS(category),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('RSS fetch timeout')), 15000))
+      ]);
+    } catch (fetchError) {
+      console.error('Error fetching RSS articles:', fetchError.message);
+      // fetchFromRSS already returns fallback articles if it fails completely
+      articles = await fetchFromRSS(category);
+    }
+    
+    if (!articles || articles.length === 0) {
+      return res.status(200).json({ 
+        articles: [{
+          title: 'No Articles Available',
+          description: 'Unable to fetch articles at this time. Please try again later.',
+          url: '#',
+          urlToImage: '',
+          source: { name: 'System' },
+          publishedAt: new Date().toISOString(),
+          content: '',
+          contentHtml: '',
+          media: { images: [], videos: [] },
+        }]
+      });
+    }
     
     // Quick enhancement without slow AI calls
     const useAI = genAI && articles.length < 20; // Only use AI for small batches

@@ -198,14 +198,23 @@ function getUrlish(v) {
   return null;
 }
 
-async function fetchFromRSS(category = 'breaking') {
+async function fetchFromRSS(category = 'breaking', retries = 2) {
   const feeds = RSS_FEEDS[category] || RSS_FEEDS.breaking;
   const allArticles = [];
+  const failedFeeds = [];
 
   for (const feedUrl of feeds) {
-    try {
-      const feed = await rssParser.parseURL(feedUrl);
-      const articles = feed.items.slice(0, 15).map((item) => {
+    let attempts = 0;
+    let success = false;
+    
+    while (attempts <= retries && !success) {
+      try {
+        const feed = await Promise.race([
+          rssParser.parseURL(feedUrl),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('RSS timeout')), 8000))
+        ]);
+        
+        const articles = feed.items.slice(0, 15).map((item) => {
         let fullContent = item['content:encoded'] || item.content || item.summary || item.description || '';
         
         // Extract media BEFORE sanitizing to preserve img/iframe tags
@@ -271,11 +280,49 @@ async function fetchFromRSS(category = 'breaking') {
         };
       });
       allArticles.push(...articles);
+      success = true;
     } catch (e) {
-      console.error(`RSS error for ${feedUrl}:`, e.message);
+      attempts++;
+      console.error(`RSS error for ${feedUrl} (attempt ${attempts}/${retries + 1}):`, e.message);
+      if (attempts > retries) {
+        failedFeeds.push(feedUrl);
+      } else {
+        // Wait before retry with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 500 * attempts));
+      }
+    }
     }
   }
+  
+  if (failedFeeds.length > 0) {
+    console.warn(`Failed to fetch from ${failedFeeds.length} feeds:`, failedFeeds);
+  }
+  
+  // If no articles were fetched, return cached or mock data to prevent empty responses
+  if (allArticles.length === 0) {
+    console.warn('No articles fetched from any RSS feed, returning fallback');
+    return getFallbackArticles(category);
+  }
+  
   return allArticles;
+}
+
+// Fallback articles when RSS feeds fail
+function getFallbackArticles(category) {
+  const now = new Date().toISOString();
+  return [
+    {
+      title: 'News Feed Temporarily Unavailable',
+      description: 'We are experiencing technical difficulties fetching the latest news. Please try again in a few moments.',
+      url: '#',
+      urlToImage: '',
+      source: { name: 'System' },
+      publishedAt: now,
+      content: 'The news feed is temporarily unavailable. This could be due to network issues or RSS feed downtime.',
+      contentHtml: '<p>The news feed is temporarily unavailable. This could be due to network issues or RSS feed downtime.</p>',
+      media: { images: [], videos: [] },
+    }
+  ];
 }
 
 // Fetch from an explicit list of feed URLs (used for regional/grouped feeds)
@@ -353,29 +400,57 @@ async function fetchFromFeeds(feedUrls = []) {
   return allArticles;
 }
 
-async function summarizeWithAI(text, maxLength = 160) {
+async function summarizeWithAI(text, maxLength = 160, retries = 2) {
   if (!genAI || !text) return text.slice(0, maxLength);
-  try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Summarize this news article in ${maxLength} characters or less:\n\n${text}`;
-    const result = await model.generateContent(prompt);
-    return result.response.text().slice(0, maxLength);
-  } catch {
-    return text.slice(0, maxLength);
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const prompt = `Summarize this news article in ${maxLength} characters or less:\n\n${text}`;
+      
+      const result = await Promise.race([
+        model.generateContent(prompt),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('AI timeout')), 10000))
+      ]);
+      
+      return result.response.text().slice(0, maxLength);
+    } catch (error) {
+      console.error(`AI summarize error (attempt ${attempt + 1}/${retries + 1}):`, error.message);
+      if (attempt === retries) {
+        // Final fallback: return truncated text
+        return text.slice(0, maxLength);
+      }
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
   }
+  return text.slice(0, maxLength);
 }
 
-async function detectCategory(title, description) {
+async function detectCategory(title, description, retries = 1) {
   if (!genAI) return 'general';
-  try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Categorize this news article into ONE of these: politics, health, science, technology, business, world, sports. Title: ${title}. Description: ${description}. Return ONLY the category name.`;
-    const result = await model.generateContent(prompt);
-    const cat = result.response.text().trim().toLowerCase();
-    return ['politics', 'health', 'science', 'technology', 'business', 'world', 'sports'].includes(cat) ? cat : 'general';
-  } catch {
-    return 'general';
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const prompt = `Categorize this news article into ONE of these: politics, health, science, technology, business, world, sports. Title: ${title}. Description: ${description}. Return ONLY the category name.`;
+      
+      const result = await Promise.race([
+        model.generateContent(prompt),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('AI timeout')), 8000))
+      ]);
+      
+      const cat = result.response.text().trim().toLowerCase();
+      return ['politics', 'health', 'science', 'technology', 'business', 'world', 'sports'].includes(cat) ? cat : 'general';
+    } catch (error) {
+      console.error(`AI category error (attempt ${attempt + 1}/${retries + 1}):`, error.message);
+      if (attempt === retries) {
+        return 'general';
+      }
+      await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+    }
   }
+  return 'general';
 }
 
 function inferLean(source) {
