@@ -16,11 +16,24 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [googleOAuthReady, setGoogleOAuthReady] = useState(false);
+  const [googleOAuthMissing, setGoogleOAuthMissing] = useState([]);
 
   // NOTE: We intentionally run this effect only once on mount.
   // The 'user' value is mutated inside; adding it to deps causes redundant restores.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    // Check server-side Google OAuth configuration once at mount
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/google/status');
+        if (resp.ok) {
+          const json = await resp.json();
+          setGoogleOAuthReady(!!json.configured);
+          setGoogleOAuthMissing(json.missing || []);
+        }
+      } catch {}
+    })();
     if (!auth) {
       // Demo mode: try local session rehydration if present
       try {
@@ -105,6 +118,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGoogle = async () => {
+    if (!auth && !googleOAuthReady) {
+      throw new Error(`Google Sign-In not configured. Missing: ${googleOAuthMissing.join(', ') || 'CLIENT_ID & CLIENT_SECRET'}.`);
+    }
     // HARD RULE: Unless Firebase explicitly configured & enabled, force server OAuth to avoid stale service worker / build using old Firebase setup.
     const shouldUseFirebase = auth && isFirebaseConfigured && !isDemoMode;
     if (shouldUseFirebase) {
@@ -299,7 +315,9 @@ export const AuthProvider = ({ children }) => {
     loading,
     isDemoMode,
     loginAsGuest,
-    loginLocal
+    loginLocal,
+    googleOAuthReady,
+    googleOAuthMissing
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

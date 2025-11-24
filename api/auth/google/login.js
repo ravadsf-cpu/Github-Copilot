@@ -39,7 +39,8 @@ module.exports = async (req, res) => {
   if (!client) {
     return res.status(503).json({
       error: 'oauth_not_configured',
-      message: 'Google Sign-In not configured. Provide GOOGLE_OAUTH_CLIENT_ID & GOOGLE_OAUTH_CLIENT_SECRET.'
+      message: 'Google Sign-In is not yet configured. To enable it:\n1. Go to Google Cloud Console → APIs & Services → Credentials\n2. Create OAuth 2.0 Client ID (Web)\n3. Add redirect URI: https://<your-vercel-domain>/api/auth/google/callback\n4. Set GOOGLE_OAUTH_CLIENT_ID & GOOGLE_OAUTH_CLIENT_SECRET in Vercel env settings\n5. Redeploy project.\n\n(You can still browse in guest mode.)',
+      docs: 'GOOGLE_OAUTH_SETUP.md'
     });
   }
 
