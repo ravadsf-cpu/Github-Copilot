@@ -9,7 +9,6 @@ import { AppProvider } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 import LandingPage from './pages/LandingPage';
-import CommandCenterPage from './pages/CommandCenterPage';
 import FeedPage from './pages/FeedPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
@@ -71,7 +70,6 @@ function App() {
             />
             <Route path="/categories/:category" element={<ProtectedRoute><CategoryPage /></ProtectedRoute>} />
             <Route path="/article/:id" element={<ProtectedRoute><ArticlePage /></ProtectedRoute>} />
-            <Route path="/command" element={<ProtectedRoute><CommandCenterPage /></ProtectedRoute>} />
             <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

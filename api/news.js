@@ -156,6 +156,15 @@ module.exports = async (req, res) => {
     })());
     await Promise.all(runners);
 
+    // Filter out incomplete articles - keep only articles with substantial content
+    articles = articles.filter(a => {
+      const hasContent = (a.content && a.content.length > 200) || 
+                        (a.contentHtml && a.contentHtml.length > 200) ||
+                        (a.description && a.description.length > 150);
+      const hasTitle = a.title && a.title.length > 10;
+      return hasContent && hasTitle;
+    });
+
     // Sort: prioritize video articles first then preserve original relative ordering
     articles.sort((a,b) => {
       const av = (a.media?.videos?.length || 0) ? 1 : 0;

@@ -8,7 +8,6 @@ import NewsCard from '../components/NewsCard';
 import MoodSelector from '../components/MoodSelector';
 import ChatBot from '../components/ChatBot';
 import AISection from '../components/AISection';
-import ScrollStack, { ScrollStackItem } from '../components/ScrollStack';
 import { mockArticles } from '../utils/mockData';
 import { fetchNews, getLean } from '../utils/aiService';
 import { useApp } from '../contexts/AppContext';
@@ -24,7 +23,6 @@ const FeedPage = () => {
   const [loading, setLoading] = useState(true);
   const [aiArticles, setAiArticles] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [viewMode, setViewMode] = useState('stack'); // 'stack' or 'grid'
 
   // Scroll-based animations
   const { scrollYProgress } = useScroll();
@@ -382,8 +380,8 @@ const FeedPage = () => {
           </motion.div>
         )}
 
-        {/* Articles Display - Stack or Grid */}
-        {!loading && viewMode === 'grid' && (
+        {/* Articles Display - Grid View */}
+        {!loading && mergedArticles.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -393,31 +391,6 @@ const FeedPage = () => {
             {mergedArticles.map((article, index) => (
               <NewsCard key={article.id} article={article} index={index} />
             ))}
-          </motion.div>
-        )}
-
-        {!loading && viewMode === 'stack' && mergedArticles.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <ScrollStack
-              useWindowScroll={true}
-              itemDistance={120}
-              itemScale={0.04}
-              itemStackDistance={40}
-              stackPosition="25%"
-              baseScale={0.88}
-              rotationAmount={2}
-              blurAmount={1.5}
-            >
-              {mergedArticles.map((article, index) => (
-                <ScrollStackItem key={article.id}>
-                  <NewsCard article={article} index={index} />
-                </ScrollStackItem>
-              ))}
-            </ScrollStack>
           </motion.div>
         )}
 

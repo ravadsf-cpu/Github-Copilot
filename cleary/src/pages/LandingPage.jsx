@@ -185,12 +185,12 @@ const LandingPage = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/command')}
+                onClick={() => navigate('/feed')}
                 className={`group px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 ${
                   theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'
                 }`}
               >
-                Launch Command Center
+                View News Feed
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </motion.button>
 
@@ -258,7 +258,7 @@ const LandingPage = () => {
               </Card>
               <Card
                 role="button"
-                aria-label="Open Command Center"
+                 aria-label="View Summaries"
                 className={`backdrop-blur-xl border text-left p-6`}
                 style={{
                   '--card-bg': theme === 'dark' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)',

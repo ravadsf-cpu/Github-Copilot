@@ -528,7 +528,7 @@ const ArticlePage = () => {
             <p className="text-gray-400 mb-4">
               Join the discussion. The widget below creates a debate automatically from this page's context.
             </p>
-            <TiltEmbed apiKey="tilt_N61DPyzbaYJOIDAO2z-3VN-UZA2TzWpt3WOXrAoIE_4" theme="midnight" />
+            <TiltEmbed apiKey="tilt_z8N5L2GgFUXkm3EvA2g7pmlHBdQfvxq7qmt3wIG71-c" theme="midnight" />
           </div>
 
           {/* Read more at source button */}
