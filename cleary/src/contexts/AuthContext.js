@@ -17,6 +17,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // NOTE: We intentionally run this effect only once on mount.
+  // The 'user' value is mutated inside; adding it to deps causes redundant restores.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!auth) {
       // Demo mode: try local session rehydration if present
@@ -93,7 +96,6 @@ export const AuthProvider = ({ children }) => {
     });
 
     return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (email, password) => {
