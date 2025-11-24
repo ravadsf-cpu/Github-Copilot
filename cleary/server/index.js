@@ -5,6 +5,8 @@ const fetch = require('node-fetch');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Parser = require('rss-parser');
 const sanitizeHtml = require('sanitize-html');
+// Google APIs (added for Gmail & OAuth integration)
+const { google } = require('googleapis');
 
 const PORT = process.env.PORT || 5001;
 const app = express();
@@ -252,6 +254,98 @@ async function fetchFromRSS(category = 'breaking') {
   return allArticles;
 }
 
+// Fast minimal fetch with caching and parallelism (stale-while-revalidate)
+const FAST_CACHE = Object.create(null); // { category: { ts, data } }
+const FAST_TTL_MS = 60_000; // reuse window (slightly longer so more hits served instantly)
+const FEED_TIMEOUT_MS = 1500; // tighter per-feed timeout for faster first byte
+const OVERALL_TIMEOUT_MS = 3000; // overall ceiling for fast route
+const MAX_ARTICLES_PER_FEED = 6; // fewer items per feed -> parse less HTML
+const MAX_TOTAL_ARTICLES = 32; // cap combined list
+
+async function fetchFastFeeds(category = 'breaking') {
+  const now = Date.now();
+  const cached = FAST_CACHE[category];
+  if (cached && (now - cached.ts) < FAST_TTL_MS && cached.data?.length) {
+    // Kick off background refresh (non-blocking)
+    backgroundRefresh(category);
+    return cached.data;
+  }
+
+  const feeds = RSS_FEEDS[category] || RSS_FEEDS.breaking;
+  const controllerForOverall = new AbortController();
+  const overallTimer = setTimeout(() => controllerForOverall.abort(), OVERALL_TIMEOUT_MS);
+
+  const parseWithTimeout = async (feedUrl) => {
+    const timerPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('feed-timeout')), FEED_TIMEOUT_MS);
+    });
+    try {
+      const feed = await Promise.race([rssParser.parseURL(feedUrl), timerPromise]);
+      if (!feed || !feed.items) return [];
+      return feed.items.slice(0, MAX_ARTICLES_PER_FEED).map(item => ({
+        title: item.title,
+        description: item.contentSnippet || (item.summary || '').slice(0,160),
+        url: item.link,
+        source: { name: feed.title || 'RSS' },
+        publishedAt: item.pubDate || new Date().toISOString(),
+        urlToImage: (item.enclosure && /image/i.test(item.enclosure.type || '') && item.enclosure.url) || '',
+        id: item.link,
+        content: '',
+        summary: item.contentSnippet || '',
+      }));
+    } catch (e) {
+      if (e.message !== 'feed-timeout') console.warn('[fast-feed] parse error', feedUrl, e.message);
+      return [];
+    }
+  };
+
+  let results = [];
+  try {
+    const settled = await Promise.allSettled(feeds.map(parseWithTimeout));
+    for (const s of settled) {
+      if (s.status === 'fulfilled') {
+        results.push(...s.value);
+        if (results.length >= MAX_TOTAL_ARTICLES) break;
+      }
+    }
+  } catch (e) {
+    // If overall abort triggers, keep any partial results
+  } finally {
+    clearTimeout(overallTimer);
+  }
+
+  // Sort newest first
+  results.sort((a,b) => new Date(b.publishedAt||0) - new Date(a.publishedAt||0));
+  results = results.slice(0, MAX_TOTAL_ARTICLES);
+  FAST_CACHE[category] = { ts: Date.now(), data: results };
+  return results;
+}
+
+function backgroundRefresh(category) {
+  // Fire-and-forget deep enrichment to update cache with full articles later
+  (async () => {
+    try {
+      const full = await fetchFromRSS(category); // existing heavy path
+      if (full && full.length) {
+        FAST_CACHE[category] = { ts: Date.now(), data: full.map(a => ({
+          // merge minimal & enriched fields
+          title: a.title,
+          description: a.description,
+            url: a.url,
+            source: a.source,
+            publishedAt: a.publishedAt,
+            urlToImage: a.urlToImage,
+            id: a.url,
+            content: a.content,
+            summary: a.summary || a.description,
+            contentHtml: a.contentHtml,
+            media: a.media
+        }))};
+      }
+    } catch {}
+  })();
+}
+
 // Expanded bias map for hundreds of sources
 const SOURCE_BIAS = {
   // left-leaning
@@ -332,13 +426,8 @@ async function summarizeWithAI({ title, description, content, url }) {
 
   try {
     if (process.env.GEMINI_API_KEY) {
-      // Try gemini-1.5-pro first, fallback to gemini-pro if needed
-      let model;
-      try {
-        model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-      } catch {
-        model = genAI.getGenerativeModel({ model: 'models/gemini-pro' });
-      }
+      // Use gemini-2.0-flash-exp for speed (as requested: NOT pro)
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
       const prompt = `Summarize the following news for a general audience in 3-4 sentences. Add a neutral, clear tone.\n\n${text}`;
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -388,6 +477,26 @@ function fallbackCategoryDetection(text) {
 }
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// Fast news endpoint (target <5s response)
+app.get('/api/news-fast', async (req, res) => {
+  const started = Date.now();
+  try {
+    const category = req.query.category || 'breaking';
+    const articles = await fetchFastFeeds(category);
+    const latency = Date.now() - started;
+    if (latency > 2500) {
+      console.warn(`[news-fast] slow response category=${category} latency=${latency}ms articles=${articles.length}`);
+    } else {
+      console.log(`[news-fast] ok category=${category} latency=${latency}ms articles=${articles.length}`);
+    }
+    res.status(200).json({ articles, category, fast: true, latencyMs: latency, respondedAt: new Date().toISOString() });
+  } catch (e) {
+    const latency = Date.now() - started;
+    console.error('[news-fast] error', e.message, 'latency=', latency, 'ms');
+    res.status(500).json({ articles: [], error: 'failed-fast', latencyMs: latency });
+  }
+});
 
 // Get list of active elections based on current date
 app.get('/api/elections/active', async (_req, res) => {
@@ -977,12 +1086,8 @@ app.get('/api/news', async (req, res) => {
       if (!r.category || r.category === 'breaking' || r.category === 'general') {
         try {
           if (process.env.GEMINI_API_KEY) {
-            let catModel;
-            try {
-              catModel = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-            } catch {
-              catModel = genAI.getGenerativeModel({ model: 'models/gemini-pro' });
-            }
+            // Use gemini-2.0-flash-exp for speed (as requested: NOT pro)
+            const catModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
             const prompt = `Categorize this news article into EXACTLY ONE category. Return ONLY the category name, nothing else.
 
 Categories:
@@ -1252,7 +1357,8 @@ app.post('/api/chat', async (req, res) => {
     let useAI = false;
     try {
       if (process.env.GEMINI_API_KEY) {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+        // Use gemini-2.0-flash-exp for speed (as requested: NOT pro)
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
         const chatPrompt = `You are a helpful news assistant. The user has the following profile:
 - Political lean: ${politicalLean || 'unknown'}
 - Interests: ${interests && interests.length > 0 ? interests.join(', ') : 'general news'}
@@ -1657,6 +1763,268 @@ Format your response as JSON:
       response: 'I apologize, but I encountered an error. Please try again.',
       articles: []
     });
+  }
+});
+
+// ------------------------------
+// Google OAuth + Gmail API
+// ------------------------------
+// In-memory token storage (replace with persistent DB for production)
+const gmailTokensByUser = new Map(); // userId -> tokens
+
+function createOAuthClient() {
+  const { GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT } = process.env;
+  if (!GOOGLE_OAUTH_CLIENT_ID || !GOOGLE_OAUTH_CLIENT_SECRET || !GOOGLE_OAUTH_REDIRECT) {
+    console.warn('[oauth] Missing env vars: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, or GOOGLE_OAUTH_REDIRECT');
+    return null;
+  }
+  try {
+    return new google.auth.OAuth2(GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT);
+  } catch (e) {
+    console.error('[oauth] Failed to create OAuth client:', e.message);
+    return null;
+  }
+}
+
+// Step 1: Generate consent URL
+app.get('/api/auth/google/init', (req, res) => {
+  try {
+    const userId = req.query.userId || 'anon';
+    const client = createOAuthClient();
+    if (!client) {
+      return res.status(503).json({
+        error: 'missing_oauth_config',
+        message: 'Google OAuth environment variables are missing. Set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT.'
+      });
+    }
+    const scopes = [
+      'openid',
+      'profile',
+      'email',
+      'https://www.googleapis.com/auth/gmail.readonly'
+    ];
+    const url = client.generateAuthUrl({
+      access_type: 'offline',
+      scope: scopes,
+      prompt: 'consent', // force consent so we get refresh_token
+      state: userId
+    });
+    res.json({ url });
+  } catch (e) {
+    console.error('[auth/init] error:', e.message);
+    res.status(500).json({ error: 'internal_error', message: 'Failed to initialize OAuth' });
+  }
+});
+
+// Step 2: OAuth callback exchanges code for tokens
+app.get('/api/auth/google/callback', async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    const client = createOAuthClient();
+    if (!client) return res.status(500).send('OAuth not configured');
+    if (!code) return res.status(400).send('Missing code');
+    const { tokens } = await client.getToken(code);
+    // Persist tokens in memory
+    gmailTokensByUser.set(state || 'anon', tokens);
+    console.log('[oauth] stored tokens for user=', state, 'scopes=', tokens.scope);
+    // Simple close page response
+    res.send('<html><body><script>window.close();</script>Authentication complete. You can close this window.</body></html>');
+  } catch (e) {
+    console.error('[oauth] callback error:', e.message);
+    res.status(500).send('OAuth error: ' + e.message);
+  }
+});
+
+// Gmail messages endpoint (reads recent messages metadata)
+app.get('/api/gmail/messages', async (req, res) => {
+  try {
+    const userId = req.query.userId || 'anon';
+    const tokens = gmailTokensByUser.get(userId);
+    if (!tokens) {
+      return res.status(401).json({ error: 'not_authenticated', message: 'No Gmail tokens for user. Initiate OAuth first.' });
+    }
+    const client = createOAuthClient();
+    if (!client) return res.status(500).json({ error: 'oauth_not_configured' });
+    client.setCredentials(tokens);
+
+    // Auto-refresh handling: update stored tokens if refreshed
+    client.on('tokens', (newTokens) => {
+      if (newTokens.refresh_token) tokens.refresh_token = newTokens.refresh_token;
+      if (newTokens.access_token) tokens.access_token = newTokens.access_token;
+      gmailTokensByUser.set(userId, tokens);
+    });
+
+    const gmail = google.gmail({ version: 'v1', auth: client });
+    const listResp = await gmail.users.messages.list({ userId: 'me', maxResults: 10 });
+    const messageIds = (listResp.data.messages || []).map(m => m.id);
+    const details = await Promise.all(messageIds.map(async (id) => {
+      try {
+        const msg = await gmail.users.messages.get({ userId: 'me', id, format: 'metadata', metadataHeaders: ['Subject', 'From', 'Date'] });
+        const headers = msg.data.payload?.headers || [];
+        const getHeader = (name) => headers.find(h => h.name === name)?.value || '';
+        return {
+          id,
+          subject: getHeader('Subject'),
+          from: getHeader('From'),
+          date: getHeader('Date'),
+          snippet: msg.data.snippet || ''
+        };
+      } catch (e) {
+        return { id, error: e.message };
+      }
+    }));
+
+    res.json({ messages: details, userId, count: details.length });
+  } catch (e) {
+    console.error('[gmail] messages error:', e.message);
+    res.status(500).json({ error: 'gmail_fetch_failed', message: e.message });
+  }
+});
+
+// ------------------------------
+// Hardened Server-side Google Login (Firebase-less fallback)
+// ------------------------------
+const jsonwebtoken = require('jsonwebtoken');
+const SESSION_COOKIE = 'cleary_session';
+const SESSION_SECRET = process.env.APP_SESSION_SECRET || 'insecure-demo-secret-change-me';
+
+function issueJwt(profile) {
+  const payload = {
+    sub: profile.id,
+    email: profile.email,
+    name: profile.name,
+    picture: profile.picture,
+    iat: Math.floor(Date.now() / 1000)
+  };
+  return jsonwebtoken.sign(payload, SESSION_SECRET, { expiresIn: '7d' });
+}
+
+function verifyJwt(token) {
+  try { return jsonwebtoken.verify(token, SESSION_SECRET); } catch { return null; }
+}
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  if (!header) return {};
+  return header.split(';').reduce((acc, part) => {
+    const [k, v] = part.split('=');
+    if (k && v) acc[k.trim()] = decodeURIComponent(v.trim());
+    return acc;
+  }, {});
+}
+
+// Auth URL for popup login
+app.get('/api/auth/google/login', (req, res) => {
+  try {
+    const client = createOAuthClient();
+    if (!client) {
+      console.log('[auth/login] OAuth not configured - returning helpful error message');
+      return res.status(503).json({ 
+        error: 'oauth_not_configured',
+        message: 'Google Sign-In is not set up yet. To enable it:\n\n1. Go to https://console.cloud.google.com/apis/credentials\n2. Create an OAuth 2.0 Client ID\n3. Add redirect URI: http://localhost:5001/api/auth/google/callback\n4. Copy Client ID and Client Secret to .env file\n\nFor now, you can use guest mode or create a local account.',
+        setupUrl: 'https://console.cloud.google.com/apis/credentials'
+      });
+    }
+    const state = req.query.state || ('login-' + Date.now());
+    const url = client.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: ['openid','profile','email'],
+      state
+    });
+    res.json({ url, state });
+  } catch (e) {
+    console.error('[auth/login] error:', e.message);
+    res.status(500).json({ error: 'internal_error', message: 'Failed to generate login URL' });
+  }
+});
+
+// Middleware augmenting callback with secure session for login states
+app.use('/api/auth/google/callback', async (req, res, next) => {
+  if (req.method !== 'GET') return next();
+  const state = req.query.state || '';
+  if (!state.startsWith('login-')) return next();
+  try {
+    const code = req.query.code;
+    if (!code) {
+      return res.status(400).send('Missing authorization code. Please try signing in again.');
+    }
+    const client = createOAuthClient();
+    if (!client) {
+      return res.status(503).send('OAuth not configured. Contact administrator.');
+    }
+    const { tokens } = await client.getToken(code);
+    if (!tokens || !tokens.access_token) {
+      throw new Error('Failed to obtain access token from Google');
+    }
+    client.setCredentials(tokens);
+    const oauth2 = google.oauth2({ version: 'v2', auth: client });
+    const { data: profile } = await oauth2.userinfo.get();
+    if (!profile || !profile.email) {
+      throw new Error('Failed to retrieve user profile from Google');
+    }
+    const jwtToken = issueJwt(profile);
+    const secure = process.env.NODE_ENV === 'production';
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(jwtToken)}; Path=/; HttpOnly; SameSite=Lax${secure?'; Secure':''}; Max-Age=${7*24*3600}`);
+    const script = `<!doctype html><html><body><script>
+      (function(){
+        const data = { profile: ${JSON.stringify({ id: profile.id, email: profile.email, name: profile.name, picture: profile.picture })} };
+        if (window.opener) { window.opener.postMessage({ type: 'cleary-google-login', data }, '*'); }
+        setTimeout(function(){ window.close(); }, 500);
+      })();
+    </script><p>Login successful! This window will close automatically...</p></body></html>`;
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(script);
+  } catch (e) {
+    console.error('[oauth-login] error:', e.message, e.stack);
+    const errorMsg = e.message || 'Unknown error occurred';
+    return res.status(500).send(`
+      <!doctype html><html><body>
+        <h2>Login Failed</h2>
+        <p>Error: ${errorMsg}</p>
+        <p>Please close this window and try again. If the problem persists, contact support.</p>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({ type: 'cleary-google-login-error', error: '${errorMsg}' }, '*');
+          }
+          setTimeout(function(){ window.close(); }, 5000);
+        </script>
+      </body></html>
+    `);
+  }
+});
+
+// Session introspection
+app.get('/api/auth/me', (req, res) => {
+  try {
+    const cookies = parseCookies(req);
+    const token = cookies[SESSION_COOKIE];
+    if (!token) return res.status(401).json({ authenticated: false, message: 'No session cookie found' });
+    const payload = verifyJwt(token);
+    if (!payload) return res.status(401).json({ authenticated: false, message: 'Invalid or expired session' });
+    res.json({ 
+      authenticated: true, 
+      user: { 
+        id: payload.sub, 
+        email: payload.email, 
+        name: payload.name, 
+        photoURL: payload.picture 
+      } 
+    });
+  } catch (e) {
+    console.error('[auth/me] error:', e.message);
+    res.status(500).json({ authenticated: false, error: 'internal_error' });
+  }
+});
+
+// Logout route
+app.post('/api/auth/logout', (req, res) => {
+  try {
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax`);
+    res.json({ ok: true, message: 'Logged out successfully' });
+  } catch (e) {
+    console.error('[auth/logout] error:', e.message);
+    res.status(500).json({ ok: false, error: 'Failed to logout' });
   }
 });
 

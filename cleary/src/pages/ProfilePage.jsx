@@ -28,7 +28,7 @@ const ProfilePage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4">
+          <h1 className="text-5xl font-bold text-white mb-4">
             Your Profile
           </h1>
           <p className="text-gray-400 text-lg">
@@ -52,7 +52,7 @@ const ProfilePage = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
                     activeTab === tab.id
-                      ? 'bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 text-white'
+                      ? 'bg-white/10 border border-white/20 text-white'
                       : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
                 >
@@ -76,14 +76,14 @@ const ProfilePage = () => {
                   
                   {/* Avatar */}
                   <div className="flex items-center space-x-6">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-4xl text-white font-bold">
+                    <div className="w-24 h-24 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-4xl text-white font-bold">
                       {user?.name?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <div>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="px-4 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 transition-all"
+                        className="px-4 py-2 rounded-lg theme-panel hover:opacity-90 transition-all"
                       >
                         Change Avatar
                       </motion.button>
@@ -97,7 +97,7 @@ const ProfilePage = () => {
                       <input
                         type="text"
                         value={user?.name || ''}
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10"
                       />
                     </div>
 
@@ -108,7 +108,7 @@ const ProfilePage = () => {
                         <input
                           type="email"
                           value={user?.email || ''}
-                          className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                          className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10"
                         />
                       </div>
                     </div>
@@ -116,7 +116,7 @@ const ProfilePage = () => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+                      className="theme-button px-6 py-3 rounded-xl font-semibold transition-all"
                     >
                       Save Changes
                     </motion.button>
@@ -140,7 +140,7 @@ const ProfilePage = () => {
                           whileHover={{ scale: 1.02, x: 5 }}
                           className={`flex items-center space-x-3 p-4 rounded-xl cursor-pointer transition-all ${
                             userPreferences.politicalBalance === option
-                              ? 'bg-purple-600/20 border border-purple-500/30'
+                              ? 'bg-white/10 border border-white/20'
                               : 'bg-white/5 border border-white/10 hover:bg-white/10'
                           }`}
                         >
@@ -177,7 +177,7 @@ const ProfilePage = () => {
                           key={format}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-purple-600/20 hover:border-purple-500/30 hover:text-purple-300 transition-all"
+                          className="py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all"
                         >
                           {format}
                         </motion.button>
@@ -207,7 +207,7 @@ const ProfilePage = () => {
                         </div>
                         <label className="relative inline-block w-12 h-6">
                           <input type="checkbox" defaultChecked className="sr-only peer" />
-                          <div className="w-12 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 transition-all"></div>
+                          <div className="w-12 h-6 bg-gray-700 rounded-full peer peer-checked:bg-white/40 transition-all"></div>
                           <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
                         </label>
                       </div>
@@ -237,7 +237,7 @@ const ProfilePage = () => {
                         </div>
                         <label className="relative inline-block w-12 h-6">
                           <input type="checkbox" defaultChecked={index < 2} className="sr-only peer" />
-                          <div className="w-12 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 transition-all"></div>
+                          <div className="w-12 h-6 bg-gray-700 rounded-full peer peer-checked:bg-white/40 transition-all"></div>
                           <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
                         </label>
                       </div>

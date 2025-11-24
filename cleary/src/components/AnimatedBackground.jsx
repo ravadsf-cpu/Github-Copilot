@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useApp } from '../contexts/AppContext';
-import { moodColors } from '../utils/mockData';
 
 const AnimatedBackground = ({ children, mood = 'neutral' }) => {
   const canvasRef = useRef(null);
@@ -16,10 +15,8 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const particles = [];
-    const particleCount = 200; // MAXED: More particles for ultra-rich effect
-    
-    const moodColor = moodColors[activeMood]?.bgPrimary || '#111827';
+  const particles = [];
+  const particleCount = 200; // particle count retained but colors are neutralized
 
     class Particle {
       constructor() {
@@ -46,9 +43,9 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
       draw() {
         const pulseOpacity = this.opacity * (0.7 + Math.sin(this.pulse) * 0.3);
         
-        // MAXED: Stronger glow effect (was 15)
-        ctx.shadowBlur = 25;
-        ctx.shadowColor = `rgba(255, 255, 255, ${pulseOpacity})`;
+  // Subtle neutral glow
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = `rgba(255, 255, 255, ${pulseOpacity * 0.8})`;
         
         ctx.fillStyle = `rgba(255, 255, 255, ${pulseOpacity})`;
         ctx.beginPath();
@@ -66,7 +63,7 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw gradient background
+      // Draw neutral radial gradient background (monochrome)
       const gradient = ctx.createRadialGradient(
         canvas.width / 2,
         canvas.height / 2,
@@ -75,8 +72,8 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
         canvas.height / 2,
         canvas.width / 2
       );
-      gradient.addColorStop(0, moodColor + '40');
-      gradient.addColorStop(1, '#000000');
+      gradient.addColorStop(0, 'rgba(255,255,255,0.06)');
+      gradient.addColorStop(1, 'rgba(0,0,0,1)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -104,7 +101,7 @@ const AnimatedBackground = ({ children, mood = 'neutral' }) => {
       <canvas
         ref={canvasRef}
         className="fixed inset-0 w-full h-full"
-        style={{ zIndex: 2, opacity: 0.35, mixBlendMode: 'screen', pointerEvents: 'none' }}
+        style={{ zIndex: 2, opacity: 0.28, mixBlendMode: 'screen', pointerEvents: 'none' }}
       />
       <motion.div
         initial={{ opacity: 0 }}

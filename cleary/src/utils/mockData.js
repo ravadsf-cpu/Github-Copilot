@@ -121,11 +121,11 @@ export const moodColors = {
 };
 
 export const moods = [
-  { id: 'recommended', label: 'Recommended', color: '#8b5cf6' },
-  { id: 'breaking', label: 'Breaking', color: '#ef4444' },
-  { id: 'economy', label: 'Economy', color: '#10b981' },
-  { id: 'war', label: 'War', color: '#f97316' },
-  { id: 'politics', label: 'Politics', color: '#3b82f6' },
-  { id: 'health', label: 'Health', color: '#ec4899' },
-  { id: 'science', label: 'Science', color: '#06b6d4' },
+  { id: 'recommended', label: 'Recommended', color: '#9ca3af' },
+  { id: 'breaking', label: 'Breaking', color: '#9ca3af' },
+  { id: 'economy', label: 'Economy', color: '#9ca3af' },
+  { id: 'war', label: 'War', color: '#9ca3af' },
+  { id: 'politics', label: 'Politics', color: '#9ca3af' },
+  { id: 'health', label: 'Health', color: '#9ca3af' },
+  { id: 'science', label: 'Science', color: '#9ca3af' },
 ];

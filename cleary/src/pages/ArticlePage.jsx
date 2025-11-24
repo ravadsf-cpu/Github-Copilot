@@ -180,7 +180,7 @@ const ArticlePage = () => {
         <Header />
         <div className="container mx-auto px-6 pt-24">
           <p className="text-gray-400">Article not found</p>
-          <button onClick={() => navigate('/feed')} className="mt-4 text-purple-400 hover:text-purple-300">
+          <button onClick={() => navigate('/feed')} className="mt-4 theme-button inline-flex items-center space-x-2 px-4 py-2 rounded-xl">
             Back to Feed
           </button>
         </div>
@@ -298,17 +298,17 @@ const ArticlePage = () => {
               <button
                 onClick={handleGenerateSummary}
                 disabled={generatingSummary}
-                className="w-full p-6 rounded-2xl bg-gradient-to-br from-purple-600/10 to-pink-600/10 border border-purple-500/20 hover:from-purple-600/20 hover:to-pink-600/20 transition-all disabled:opacity-50"
+                className="w-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50"
               >
                 <div className="flex items-center justify-center space-x-2">
                   {generatingSummary ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin"></div>
-                      <span className="text-purple-400 font-semibold">Generating AI Summary...</span>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span className="text-white font-semibold">Generating AI Summary...</span>
                     </>
                   ) : (
                     <>
-                      <span className="text-purple-400">✨</span>
+                      <span className="text-white">✨</span>
                       <span className="text-white font-semibold">Click to Generate AI Summary</span>
                     </>
                   )}
@@ -320,10 +320,10 @@ const ArticlePage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-purple-600/10 to-pink-600/10 border border-purple-500/20"
+              className="mb-8 p-6 rounded-2xl bg-white/5 border border-white/10"
             >
               <h2 className="text-lg font-semibold text-white mb-3 flex items-center space-x-2">
-                <span className="text-purple-400">✨</span>
+                <span className="text-white">✨</span>
                 <span>AI Summary</span>
               </h2>
               <p className="text-gray-300 leading-relaxed">{article.summary}</p>
@@ -423,7 +423,7 @@ const ArticlePage = () => {
                               <option value="2">2x</option>
                             </select>
                           </label>
-                          <button className="text-xs text-white px-2 py-1 rounded bg-purple-600/80 hover:bg-purple-700" onClick={e => {
+                          <button className="text-xs text-white px-2 py-1 rounded bg-white/20 hover:bg-white/30" onClick={e => {
                             const v = e.target.closest('div').previousSibling;
                             if (v && v.tagName === 'VIDEO') {
                               if (v.requestFullscreen) v.requestFullscreen();
@@ -483,7 +483,7 @@ const ArticlePage = () => {
                     }}
                   />
                   {article.contentHtml.length < 500 && (
-                    <div className="mt-8 p-4 bg-purple-600/10 border border-purple-500/20 rounded-xl">
+                    <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-xl">
                       <p className="text-gray-400 text-base">
                         💡 This is the content available from the feed. For the complete article with images and interactive elements, visit the source below.
                       </p>
@@ -496,7 +496,7 @@ const ArticlePage = () => {
                     <p key={idx} className="mb-4 leading-8">{paragraph.trim()}</p>
                   ))}
                   {article.content.length < 500 && (
-                    <div className="mt-8 p-4 bg-purple-600/10 border border-purple-500/20 rounded-xl">
+                    <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-xl">
                       <p className="text-gray-400 text-base">
                         💡 This is the content available from the feed. For the complete article with images and interactive elements, visit the source below.
                       </p>
@@ -543,7 +543,7 @@ const ArticlePage = () => {
                 href={article.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:shadow-lg hover:shadow-purple-500/40 transition-all"
+                className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl theme-button font-semibold transition-all"
               >
                 <span>Read Full Article at Source</span>
                 <ExternalLink className="w-4 h-4" />
@@ -564,7 +564,7 @@ const ArticlePage = () => {
                 href={article.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-purple-400 hover:text-purple-300 underline"
+                className="text-white hover:text-gray-300 underline"
               >
                 {typeof article.source === 'string' ? article.source : (article.source?.name || 'Source')}
               </a>

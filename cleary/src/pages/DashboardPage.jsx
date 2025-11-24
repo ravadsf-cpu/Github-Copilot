@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Header from '../components/Header';
@@ -12,11 +12,10 @@ const DashboardPage = () => {
 
   // Scroll-based animations
   const { scrollYProgress } = useScroll();
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+  useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
   
   // Spring physics
   const springConfig = { stiffness: 300, damping: 30 };
-  const organicEase = [0.17, 0.67, 0.83, 0.67];
 
   // Track mouse for parallax
   useEffect(() => {
@@ -30,12 +29,13 @@ const DashboardPage = () => {
   }, []);
 
   // Mock data for charts
+  // Use grayscale palette for neutral theme
   const moodData = [
-    { name: 'Hopeful', value: 25, color: '#10b981' },
-    { name: 'Inspiring', value: 30, color: '#3b82f6' },
-    { name: 'Exciting', value: 20, color: '#ec4899' },
-    { name: 'Balanced', value: 15, color: '#6b7280' },
-    { name: 'Concerning', value: 10, color: '#f97316' }
+    { name: 'Hopeful', value: 25, color: '#111111' },
+    { name: 'Inspiring', value: 30, color: '#3f3f46' },
+    { name: 'Exciting', value: 20, color: '#6b7280' },
+    { name: 'Balanced', value: 15, color: '#9ca3af' },
+    { name: 'Concerning', value: 10, color: '#d1d5db' }
   ];
 
   const readingTimeData = [
@@ -80,49 +80,9 @@ const DashboardPage = () => {
   ];
 
   return (
-    <AnimatedBackground mood="inspiring">
+    <AnimatedBackground mood="neutral">
       <Header />
-      
-      {/* Floating particles effect */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -40, 0],
-              opacity: [0.2, 0.8, 0.2],
-              scale: [1, 2, 1],
-            }}
-            transition={{
-              duration: 4 + Math.random() * 3,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-              ease: organicEase,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Parallax gradient orbs */}
-      <motion.div
-        className="fixed top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none z-0"
-        style={{
-          x: useTransform(smoothProgress, [0, 1], ['-20%', '20%']),
-          y: useTransform(smoothProgress, [0, 1], ['-10%', '30%']),
-        }}
-      />
-      <motion.div
-        className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-pink-600/20 rounded-full blur-3xl pointer-events-none z-0"
-        style={{
-          x: useTransform(smoothProgress, [0, 1], ['20%', '-20%']),
-          y: useTransform(smoothProgress, [0, 1], ['10%', '-30%']),
-        }}
-      />
+      {/* Removed colored particles and orbs for neutral theme */}
       
       <main className="relative container mx-auto px-6 pt-24 pb-12 z-10">
         <motion.div
@@ -135,7 +95,7 @@ const DashboardPage = () => {
             y: mousePosition.y * 3,
           }}
         >
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-4">
+          <h1 className={`text-5xl md:text-6xl font-bold mb-4 ${'text-white'}`}>
             Your Memory Dashboard
           </h1>
           <p className="text-gray-400 text-lg">
@@ -155,13 +115,13 @@ const DashboardPage = () => {
               whileTap={{ scale: 0.98 }}
               className="relative group cursor-pointer"
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-40 rounded-2xl blur-2xl transition-all duration-500`} />
-              
-              <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 group-hover:border-white/20 transition-all">
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-10 transition-all duration-500" />
+
+              <div className="relative backdrop-blur-xl theme-panel rounded-2xl p-6 group-hover:opacity-95 transition-all">
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.2 }}
                   transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mb-4 shadow-lg`}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-lg ${'bg-white/10 border border-white/10'}`}
                 >
                   <stat.icon className="w-6 h-6 text-white" />
                 </motion.div>
@@ -182,9 +142,9 @@ const DashboardPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, type: 'spring', ...springConfig }}
             whileHover={{ scale: 1.02 }}
-            className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 group"
+            className="relative backdrop-blur-xl theme-panel rounded-2xl p-6 group"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-cyan-600/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all" />
+            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-all" />
             <h3 className="relative text-xl font-bold text-white mb-6">Weekly Reading Activity</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={readingTimeData}>
@@ -199,13 +159,8 @@ const DashboardPage = () => {
                     backdropFilter: 'blur(10px)'
                   }}
                 />
-                <Bar dataKey="minutes" fill="url(#colorGradient)" radius={[8, 8, 0, 0]} />
-                <defs>
-                  <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#a855f7" />
-                    <stop offset="100%" stopColor="#ec4899" />
-                  </linearGradient>
-                </defs>
+                <Bar dataKey="minutes" fill="#9ca3af" radius={[8, 8, 0, 0]} />
+                <defs></defs>
               </BarChart>
             </ResponsiveContainer>
           </motion.div>
@@ -216,9 +171,9 @@ const DashboardPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, type: 'spring', ...springConfig }}
             whileHover={{ scale: 1.02 }}
-            className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 group"
+            className="relative backdrop-blur-xl theme-panel rounded-2xl p-6 group"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all" />
+            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-all" />
             <h3 className="relative text-xl font-bold text-white mb-6">Content Mood Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -252,7 +207,7 @@ const DashboardPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8"
+          className="backdrop-blur-xl theme-panel rounded-2xl p-8"
         >
           <h3 className="text-2xl font-bold text-white mb-6">Your Learned Preferences</h3>
           
@@ -263,7 +218,7 @@ const DashboardPage = () => {
                 {userPreferences.topics.map((topic, index) => (
                   <span
                     key={index}
-                    className="px-4 py-2 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-purple-300"
+                    className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-300"
                   >
                     {topic}
                   </span>
@@ -279,7 +234,7 @@ const DashboardPage = () => {
                     initial={{ width: 0 }}
                     animate={{ width: '50%' }}
                     transition={{ duration: 1, delay: 0.8 }}
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                    className="h-full bg-white/40"
                   />
                 </div>
                 <span className="text-white font-semibold capitalize">
@@ -290,8 +245,8 @@ const DashboardPage = () => {
 
             <div>
               <h4 className="text-gray-400 mb-3">AI Insights</h4>
-              <div className="backdrop-blur-sm bg-blue-600/10 border border-blue-500/30 rounded-xl p-4">
-                <p className="text-blue-300">
+              <div className="backdrop-blur-sm bg-white/5 border border-white/10 rounded-xl p-4">
+                <p className="text-gray-300">
                   Based on your reading patterns, you prefer in-depth technology and science content with an optimistic tone. 
                   Consider exploring more international news for a broader perspective.
                 </p>

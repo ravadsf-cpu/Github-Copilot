@@ -3,10 +3,13 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AnimatedBackground from '../components/AnimatedBackground';
+import RippleGrid from '../components/RippleGrid';
+import { useTheme } from '../contexts/ThemeContext';
 import RippleButton from '../components/RippleButton';
 
 const SignupPage = () => {
   const { loginWithGoogle, loginAsGuest, isDemoMode } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -15,16 +18,13 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
 
   const springConfig = { stiffness: 300, damping: 30 };
-  const organicEase = [0.17, 0.67, 0.83, 0.67];
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      // Allow signup with any email/password for now
       if (name && email && password) {
-        // Create a mock user session
         localStorage.setItem('cleary_user', JSON.stringify({
           email,
           displayName: name,
@@ -70,34 +70,17 @@ const SignupPage = () => {
 
   return (
     <AnimatedBackground mood="neutral">
-      {/* Floating particles effect */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-pink-400 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.2, 0.8, 0.2],
-              scale: [1, 1.5, 1],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-              ease: organicEase,
-            }}
-          />
-        ))}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <RippleGrid
+          enableRainbow={false}
+          gridColor={theme === 'dark' ? '#ffffff' : '#000000'}
+          rippleIntensity={0.045}
+          gridSize={9}
+          gridThickness={14}
+          mouseInteraction={false}
+          opacity={theme === 'dark' ? 0.12 : 0.06}
+        />
       </div>
-
-      {/* Gradient orbs */}
-      <div className="fixed top-1/4 right-1/4 w-96 h-96 bg-pink-600/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative min-h-screen flex items-center justify-center px-6 py-16 z-10">
         <motion.div
@@ -106,15 +89,12 @@ const SignupPage = () => {
           transition={{ type: 'spring', ...springConfig }}
           className="relative w-full max-w-md group"
         >
-          {/* Glow effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-pink-600/30 to-purple-600/30 rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
-          
-          <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl">
+          <div className="relative backdrop-blur-xl theme-panel rounded-2xl p-8 shadow-2xl">
             <motion.h1
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2"
+              className={`text-3xl md:text-4xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-black'}`}
             >
               Create your account
             </motion.h1>
@@ -144,16 +124,13 @@ const SignupPage = () => {
               transition={{ delay: 0.4 }}
             >
               <label className="block text-gray-400 mb-2">Name</label>
-              <div className="relative group">
-                <div className="absolute inset-0 bg-pink-600/10 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-all" />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="relative w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20 transition-all"
-                  required
-                />
-              </div>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl theme-input focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 transition-all"
+                required
+              />
             </motion.div>
 
             <motion.div
@@ -162,16 +139,13 @@ const SignupPage = () => {
               transition={{ delay: 0.5 }}
             >
               <label className="block text-gray-400 mb-2">Email</label>
-              <div className="relative group">
-                <div className="absolute inset-0 bg-purple-600/10 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-all" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="relative w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                  required
-                />
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl theme-input focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 transition-all"
+                required
+              />
             </motion.div>
 
             <motion.div
@@ -180,16 +154,13 @@ const SignupPage = () => {
               transition={{ delay: 0.6 }}
             >
               <label className="block text-gray-400 mb-2">Password</label>
-              <div className="relative group">
-                <div className="absolute inset-0 bg-pink-600/10 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-all" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="relative w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20 transition-all"
-                  required
-                />
-              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl theme-input focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 transition-all"
+                required
+              />
             </motion.div>
 
             <motion.div
@@ -202,15 +173,13 @@ const SignupPage = () => {
               <RippleButton
                 type="submit"
                 disabled={loading}
-                className="relative w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold hover:shadow-lg hover:shadow-pink-500/40 disabled:opacity-50 overflow-hidden group"
+                className="theme-button w-full py-3 rounded-xl font-semibold disabled:opacity-50"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <span className="relative z-10">{loading ? 'Creating account...' : 'Sign Up'}</span>
+                {loading ? 'Creating account...' : 'Sign Up'}
               </RippleButton>
             </motion.div>
           </form>
 
-          {/* Divider */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -222,7 +191,6 @@ const SignupPage = () => {
             <div className="flex-1 border-t border-white/10" />
           </motion.div>
 
-          {/* Google Sign In */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -234,7 +202,7 @@ const SignupPage = () => {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="w-full py-3 px-4 rounded-xl bg-white/10 border border-white/20 text-white font-semibold hover:bg-white/20 disabled:opacity-50 transition-all flex items-center justify-center gap-3"
+              className="w-full py-3 px-4 rounded-xl theme-panel text-current font-semibold hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -246,7 +214,6 @@ const SignupPage = () => {
             </button>
           </motion.div>
 
-          {/* Continue as guest */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -266,11 +233,11 @@ const SignupPage = () => {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.0 }}
+            transition={{ delay: 1 }}
             className="text-gray-400 text-sm mt-6 text-center"
           >
             Already have an account?{' '}
-            <Link to="/login" className="text-pink-300 hover:text-pink-200 underline font-semibold">
+            <Link to="/login" className={`underline font-semibold ${theme === 'dark' ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-700'}`}>
               Sign in
             </Link>
           </motion.p>

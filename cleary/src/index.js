@@ -17,3 +17,14 @@ root.render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+// Register Service Worker to cache API responses and images for faster reloads
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .catch(() => {
+        // no-op: SW registration can fail in dev or unsupported contexts
+      });
+  });
+}

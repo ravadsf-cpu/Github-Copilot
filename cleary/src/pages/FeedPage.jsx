@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
 import RippleGrid from '../components/RippleGrid';
 import { useTheme } from '../contexts/ThemeContext';
@@ -16,6 +16,7 @@ import { Search, Filter } from '../components/Icons';
 
 const FeedPage = () => {
   const [articles, setArticles] = useState([]);
+  const initialLoadRef = useRef(false);
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const { currentMood, userPreferences } = useApp();
@@ -27,7 +28,7 @@ const FeedPage = () => {
 
   // Scroll-based animations
   const { scrollYProgress } = useScroll();
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+  useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
   
   // Spring physics
   const springConfig = { stiffness: 300, damping: 30 };
@@ -51,25 +52,50 @@ const FeedPage = () => {
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
-      const strategy = userPreferences?.politicalBalance || 'balanced';
-      const data = await fetchNews({
-  category: currentMood !== 'breaking' ? currentMood : undefined,
-        personalize: true,
-        strategy,
-      });
-      if (data.articles && data.articles.length) {
-        setArticles(data.articles);
-      } else {
-        // fallback to local mock
-  if (currentMood && currentMood !== 'breaking') {
-          const filtered = mockArticles.filter((a) => a.category === currentMood);
-          setArticles(filtered.length ? filtered : mockArticles);
-        } else {
+      // 1. INSTANT: Show cached or mock articles immediately (NO loading spinner)
+      if (!initialLoadRef.current) {
+        try {
+          const cached = JSON.parse(localStorage.getItem('fastArticles') || '[]');
+          if (cached && cached.length) {
+            setArticles(cached);
+            setLoading(false); // Show cached content immediately
+          } else {
+            // No cache: show mock data instantly
+            if (currentMood && currentMood !== 'breaking') {
+              const filtered = mockArticles.filter((a) => a.category === currentMood);
+              setArticles(filtered.length ? filtered : mockArticles);
+            } else {
+              setArticles(mockArticles);
+            }
+            setLoading(false); // Show mock content immediately
+          }
+        } catch {
           setArticles(mockArticles);
+          setLoading(false);
         }
+        initialLoadRef.current = true;
       }
-      setLoading(false);
+
+      // 2. Background fetch: update with real articles when ready (non-blocking)
+      const strategy = userPreferences?.politicalBalance || 'balanced';
+      try {
+        const data = await fetchNews({
+          category: currentMood !== 'breaking' ? currentMood : undefined,
+          personalize: true,
+          strategy,
+        });
+
+        if (data.articles && data.articles.length) {
+          setArticles(data.articles);
+          try { 
+            localStorage.setItem('fastArticles', JSON.stringify(data.articles.slice(0, 40))); 
+            localStorage.setItem('fastArticles_ts', Date.now().toString());
+          } catch {}
+        }
+      } catch (e) {
+        console.warn('fetchNews background error', e);
+        // Keep showing cached/mock articles
+      }
     };
     load();
   }, [currentMood, userPreferences?.politicalBalance]);
@@ -188,20 +214,21 @@ const FeedPage = () => {
       </div>
       <Header />
       
-      {/* Floating particles effect */}
+      {/* Floating particles effect (neutralized to gray) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         {[...Array(15)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-purple-400 rounded-full"
+            className="absolute w-1 h-1 rounded-full"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
+              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
             }}
             animate={{
               y: [0, -30, 0],
-              opacity: [0.2, 0.6, 0.2],
-              scale: [1, 1.5, 1],
+              opacity: [0.15, 0.5, 0.15],
+              scale: [1, 1.4, 1],
             }}
             transition={{
               duration: 3 + Math.random() * 2,
@@ -213,15 +240,7 @@ const FeedPage = () => {
         ))}
       </div>
 
-      {/* Parallax gradient orbs */}
-      <motion.div
-        className="fixed inset-0 opacity-20 pointer-events-none z-0"
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.3), transparent 70%)',
-          x: useTransform(smoothProgress, [0, 1], ['0%', '10%']),
-          y: useTransform(smoothProgress, [0, 1], ['0%', '15%']),
-        }}
-      />
+      {/* Removed colored orbs for neutral theme */}
       
       <main className="relative container mx-auto px-6 pt-24 pb-12 z-10">
         {/* AI Section with parallax */}
@@ -249,7 +268,7 @@ const FeedPage = () => {
                 <p className="text-sm text-black/60 dark:text-gray-400">
                   Found {aiArticles.articles.length} articles
                   {aiArticles.category && aiArticles.category !== 'breaking' && (
-                    <span className="ml-2 px-2 py-1 rounded-full bg-purple-600/20 text-purple-300 text-xs">
+                    <span className="ml-2 px-2 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300 text-xs">
                       {aiArticles.category}
                     </span>
                   )}
@@ -291,7 +310,7 @@ const FeedPage = () => {
           className="my-8 flex flex-col md:flex-row gap-4"
         >
           <div className="flex-1 relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-black/40 dark:text-gray-400 z-10" />
             <input
               type="text"
@@ -308,7 +327,7 @@ const FeedPage = () => {
             transition={{ type: 'spring', ...springConfig }}
             className="relative flex items-center space-x-2 px-6 py-3 rounded-xl theme-panel backdrop-blur-xl hover:opacity-90 transition-all group"
           >
-            <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/10 rounded-xl blur-md transition-all" />
+            <div className="absolute inset-0 rounded-xl blur-md transition-all opacity-0 group-hover:opacity-100" />
             <Filter className="w-5 h-5 relative z-10" />
             <span className="relative z-10">Filters</span>
           </motion.button>
@@ -341,9 +360,9 @@ const FeedPage = () => {
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSearchQuery(t)}
-                  className="relative px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-purple-600/20 hover:text-white hover:border-purple-500/30 transition-all group"
+                  className="relative px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all group"
                 >
-                  <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/20 rounded-full blur transition-all" />
+                  <div className="absolute inset-0 rounded-full blur transition-all opacity-0 group-hover:opacity-100" />
                   <span className="relative z-10">#{t}</span>
                 </motion.button>
               ))}
@@ -358,7 +377,7 @@ const FeedPage = () => {
             animate={{ opacity: 1 }}
             className="flex flex-col items-center justify-center py-20"
           >
-            <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4"></div>
+            <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
             <p className="text-gray-400">Loading latest articles...</p>
           </motion.div>
         )}

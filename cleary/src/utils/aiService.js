@@ -28,9 +28,30 @@ export const fetchNews = async ({ mood, category, q, personalize, strategy } = {
     if (q) params.set('q', q);
     if (personalize) params.set('personalize', 'true');
     if (strategy) params.set('strategy', strategy);
-    const res = await fetch(`/api/news?${params.toString()}`);
+    // Try fast endpoint first for sub-5s initial render
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000); // 4s client-side cap
+    let res;
+    try {
+      res = await fetch(`/api/news-fast?${params.toString()}`);
+    } catch (e) {
+      // network error; will fallback below
+    }
+    if (!res.ok) {
+      // Fallback to full enrichment endpoint
+      try {
+        res = await fetch(`/api/news?${params.toString()}`, { signal: controller.signal });
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          console.warn('fetchNews aborted after timeout');
+          return { articles: [], total: 0, timedOut: true };
+        }
+        throw e;
+      }
+    }
     if (!res.ok) throw new Error('Failed to fetch news');
     const data = await res.json();
+    clearTimeout(timeout);
     return data;
   } catch (e) {
     console.error('fetchNews error', e);

@@ -39,6 +39,12 @@ REACT_APP_FIREBASE_PROJECT_ID=your_project
 # ... other Firebase config
 
 REACT_APP_OPENAI_API_KEY=your_openai_key  # Optional
+GEMINI_API_KEY=your_gemini_key            # Backend Gemini model (fast summaries)
+
+# Google OAuth / Gmail
+GOOGLE_OAUTH_CLIENT_ID=your_google_client_id
+GOOGLE_OAUTH_CLIENT_SECRET=your_google_client_secret
+GOOGLE_OAUTH_REDIRECT=http://localhost:5001/api/auth/google/callback
 ```
 
 ## 🚀 Running the App
@@ -133,6 +139,37 @@ REACT_APP_NEWS_API_KEY=
 ```
 
 ## 🎨 Customization
+
+
+### 🔑 Google OAuth & Gmail Setup
+
+1. Go to Google Cloud Console → Create a project.
+2. Enable APIs: OAuth consent screen (External), then enable Gmail API.
+3. Create OAuth 2.0 Client ID (Web Application) with redirect URI:
+	 - `http://localhost:5001/api/auth/google/callback`
+4. Fill env vars above and restart the server.
+5. Frontend flow:
+	 - Call `GET /api/auth/google/init?userId=<firebaseUid>` → receive `url`.
+	 - Open the returned URL in a popup/tab.
+	 - After consent, popup closes (callback sends a simple page) and tokens are stored server-side.
+	 - Fetch emails via: `GET /api/gmail/messages?userId=<firebaseUid>`.
+
+Returned structure:
+```jsonc
+{
+	"messages": [
+		{ "id": "18c9...", "subject": "Welcome", "from": "Team <team@example.com>", "date": "Fri, 14 Nov 2025 10:05:21 -0500", "snippet": "Thanks for trying Cleary..." }
+	],
+	"count": 10,
+	"userId": "uid123"
+}
+```
+
+Notes:
+- Tokens are stored in-memory (Map). For production, persist to a database and encrypt.
+- Scopes used: `openid profile email gmail.readonly`.
+- Refresh tokens only returned on the first consent with `prompt=consent` or if revoked.
+- Add additional scopes (e.g., `gmail.modify`) if write access needed.
 
 ### Colors & Theme
 Edit `tailwind.config.js` to customize the color scheme.
