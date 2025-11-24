@@ -10,6 +10,8 @@ export const AppProvider = ({ children }) => {
     topics: ['economy', 'science', 'war', 'politics'],
     excludeTopics: [],
     politicalBalance: 'reinforce', // reinforce, balanced, challenge
+    viewMode: 'grid', // grid | stack
+    allowStackView: false, // experimental feature flag, default off
   });
   const [readingHistory, setReadingHistory] = useState([]);
   const [backgroundMood, setBackgroundMood] = useState('neutral');

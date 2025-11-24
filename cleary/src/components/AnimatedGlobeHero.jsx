@@ -209,7 +209,7 @@ const AnimatedGlobeHero = () => {
 
   // Typewriter effect for tagline
   const [displayText, setDisplayText] = useState('');
-  const fullText = 'Your Intelligent News Command Center';
+  const fullText = 'Your Intelligent News Feed';
 
   useEffect(() => {
     let index = 0;
@@ -373,10 +373,10 @@ const AnimatedGlobeHero = () => {
             <motion.button
               whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(147, 51, 234, 0.5)" }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/command')}
+              onClick={() => navigate('/feed')}
               className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white font-bold text-lg relative overflow-hidden group"
             >
-              <span className="relative z-10">Launch Command Center</span>
+              <span className="relative z-10">View News Feed</span>
               <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.button>
 

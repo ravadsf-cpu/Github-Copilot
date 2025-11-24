@@ -12,7 +12,6 @@ const Header = () => {
 
   const navItems = [
     { path: '/feed', label: 'Feed', icon: Newspaper },
-    { path: '/command', label: 'Command', icon: BarChart2 },
     { path: '/elections', label: 'Elections', icon: Vote },
     { path: '/dashboard', label: 'Insights', icon: BarChart2 },
     { path: '/videos', label: 'Videos', icon: Video },
@@ -27,6 +26,11 @@ const Header = () => {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.17, 0.67, 0.83, 0.67] }}
       className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b ${theme === 'dark' ? 'bg-black/40 border-white/10' : 'bg-white/60 border-black/10'}`}
+      style={{
+        background: theme === 'dark' 
+          ? 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.4))' 
+          : 'linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.6))'
+      }}
     >
       <nav className="relative container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
@@ -38,8 +42,8 @@ const Header = () => {
               className="flex items-center space-x-2 group"
             >
               <div className="relative">
-                <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center ${theme === 'dark' ? 'bg-black border border-white/20' : 'bg-white border border-black/20'}`}>
-                  <span className={`${theme === 'dark' ? 'text-white' : 'text-black'} font-bold text-sm`}>C</span>
+                <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center ${theme === 'dark' ? 'bg-gradient-to-br from-purple-600/20 to-pink-600/20 border border-purple-400/30' : 'bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200/50'}`}>
+                  <span className={`${theme === 'dark' ? 'text-purple-300' : 'text-purple-700'} font-bold text-sm`}>C</span>
                 </div>
               </div>
               <span className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>

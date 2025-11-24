@@ -4,6 +4,8 @@
   "scripts": {
     "build": "cd cleary && npm install && npm run build",
     "dev": "cd cleary && npm start",
+    "server": "cd cleary && npm run server",
+    "restart": "pkill -f 'server/index.js' || true; cd cleary && npm run server",
     "vercel-build": "cd cleary && npm install --no-audit --no-fund && npm run build"
   },
   "dependencies": {

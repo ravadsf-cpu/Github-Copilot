@@ -184,6 +184,48 @@ const ProfilePage = () => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Experimental settings */}
+                  <div className="mt-8 p-4 rounded-xl bg-white/5 border border-white/10">
+                    <h3 className="text-lg font-semibold text-white mb-2">Experimental</h3>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">Enable Stack View</p>
+                        <p className="text-gray-400 text-sm">Turn on an alternative stacked scroll layout (off by default)</p>
+                      </div>
+                      <label className="relative inline-block w-12 h-6">
+                        <input
+                          type="checkbox"
+                          checked={!!userPreferences.allowStackView}
+                          onChange={(e) => setUserPreferences({
+                            ...userPreferences,
+                            allowStackView: e.target.checked,
+                            // if disabling, force viewMode back to grid
+                            viewMode: e.target.checked ? userPreferences.viewMode : 'grid'
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-12 h-6 bg-gray-700 rounded-full peer peer-checked:bg-white/40 transition-all"></div>
+                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                      </label>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-gray-400 mb-2">Preferred View Mode</label>
+                      <select
+                        value={userPreferences.viewMode || 'grid'}
+                        onChange={(e) => setUserPreferences({ ...userPreferences, viewMode: e.target.value })}
+                        disabled={!userPreferences.allowStackView}
+                        className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${userPreferences.allowStackView ? 'border-white/10' : 'border-white/5'} text-white focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10`}
+                      >
+                        <option value="grid">Grid (Recommended)</option>
+                        <option value="stack">Stack (Experimental)</option>
+                      </select>
+                      {!userPreferences.allowStackView && (
+                        <p className="text-xs text-gray-500 mt-2">Enable Stack View above to change this</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
