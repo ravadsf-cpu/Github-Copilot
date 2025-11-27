@@ -121,11 +121,47 @@ const FeedPage = () => {
 
   const filteredArticles = articles.filter(article =>
     article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.summary.toLowerCase().includes(searchQuery.toLowerCase())
+    (article.summary || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Smart article sorting based on user's political preference
+  const sortedByPreference = React.useMemo(() => {
+    if (!userPreferences?.politicalBalance) return filteredArticles;
+    
+    const preference = userPreferences.politicalBalance;
+    
+    // Map political balance preference to lean scoring
+    const preferenceMap = {
+      'left': ['left', 'lean-left', 'center'],
+      'lean-left': ['lean-left', 'left', 'center', 'lean-right'],
+      'balanced': ['center', 'lean-left', 'lean-right', 'left', 'right'],
+      'lean-right': ['lean-right', 'right', 'center', 'lean-left'],
+      'right': ['right', 'lean-right', 'center']
+    };
+    
+    const order = preferenceMap[preference] || preferenceMap['balanced'];
+    
+    return [...filteredArticles].sort((a, b) => {
+      // Get lean rankings
+      const aLean = a.lean || 'center';
+      const bLean = b.lean || 'center';
+      const aRank = order.indexOf(aLean);
+      const bRank = order.indexOf(bLean);
+      
+      // If leans are equally preferred, sort by confidence
+      if (aRank === bRank) {
+        const aConf = a.leanConfidence || 0.5;
+        const bConf = b.leanConfidence || 0.5;
+        return bConf - aConf;
+      }
+      
+      // Sort by preference order (lower rank = more preferred)
+      return aRank - bRank;
+    });
+  }, [filteredArticles, userPreferences?.politicalBalance]);
+
   // Always keep the main feed visible; AI results render as a separate section
-  const displayArticles = filteredArticles;
+  const displayArticles = sortedByPreference;
 
   // Compute "Happening Now" headlines and trending topics from current articles
   const happeningNow = React.useMemo(() => {

@@ -212,13 +212,32 @@ const NewsCard = ({ article, index }) => {
             {article.title}
           </h3>
 
-          <p className="text-gray-400 text-sm leading-relaxed max-h-32 overflow-y-auto pr-1 custom-scroll">
+          <p className="text-gray-400 text-sm leading-relaxed line-clamp-4">
             {article.summary || article.description}
           </p>
 
-          {/* Full doc indicator */}
-          {(article.contentHtml && article.contentHtml.length > 800) && (
-            <div className="text-[11px] text-purple-300">Full document available</div>
+          {/* Political lean indicator with color coding */}
+          {article.lean && article.lean !== 'center' && (
+            <div className={`inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded-full ${
+              article.lean === 'left' || article.lean === 'lean-left' 
+                ? 'bg-blue-500/20 text-blue-300' 
+                : 'bg-red-500/20 text-red-300'
+            }`}>
+              <span className="font-semibold uppercase">{article.lean}</span>
+              {article.leanConfidence && article.leanConfidence > 0.7 && (
+                <span className="opacity-60">({Math.round(article.leanConfidence * 100)}%)</span>
+              )}
+            </div>
+          )}
+
+          {/* Full content indicator */}
+          {(article.content && article.content.length > 500) && (
+            <div className="text-[11px] text-purple-300 flex items-center space-x-1">
+              <span>•</span>
+              <span>{Math.ceil(article.content.split(' ').length / 200)} min read</span>
+              <span>•</span>
+              <span>Full article available</span>
+            </div>
           )}
 
           {/* Actions with enhanced animations */}

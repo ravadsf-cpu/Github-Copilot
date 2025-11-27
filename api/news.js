@@ -1,4 +1,4 @@
-const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, genAI, toEmbedFromUrl, extractMediaFromHtml, deduplicateArticles, detectTrendingTopics } = require('./_lib/shared');
+const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, detectPoliticalLeanAI, genAI, toEmbedFromUrl, extractMediaFromHtml, deduplicateArticles, detectTrendingTopics } = require('./_lib/shared');
 const { cache } = require('./_lib/cache');
 let fetch;
 try { fetch = require('node-fetch'); } catch { /* Node 18 runtime may have global fetch */ }
@@ -161,23 +161,27 @@ module.exports = async (req, res) => {
       });
     }
     
-    // Quick enhancement without slow AI calls
-    const useAI = genAI && articles.length < 20; // Only use AI for small batches
+    // Enhanced AI processing with better summaries and political classification
+    const useAI = genAI && articles.length < 30; // Use AI for batches up to 30
     
     articles = await Promise.all(articles.map(async (article) => {
+      // Generate comprehensive 3-4 sentence summary (300 chars)
       const summary = useAI 
-        ? await summarizeWithAI(article.content || article.description, 160)
-        : (article.description || article.content || '').slice(0, 160);
+        ? await summarizeWithAI(article.content || article.description || article.title, 300)
+        : (article.description || article.content || '').slice(0, 300);
       
       const detectedCategory = useAI
         ? await detectCategory(article.title, article.description)
         : category || 'general';
       
-      const leanEval = scoreLean(
-        `${article.title || ''}. ${article.description || ''} ${article.content || ''}`,
-        article.source?.name || '',
-        article.url || ''
-      );
+      // Use AI-enhanced political lean detection for better accuracy
+      const leanEval = useAI
+        ? await detectPoliticalLeanAI(article.title, article.description, article.content)
+        : scoreLean(
+            `${article.title || ''}. ${article.description || ''} ${article.content || ''}`,
+            article.source?.name || '',
+            article.url || ''
+          );
       
       return {
         ...article,
@@ -186,8 +190,9 @@ module.exports = async (req, res) => {
         lean: leanEval.label,
         leanScore: leanEval.score,
         leanReasons: leanEval.reasons,
+        leanConfidence: leanEval.confidence || 0.5,
         id: article.url,
-        readTime: Math.ceil((article.content || article.description).split(' ').length / 200),
+        readTime: Math.ceil((article.content || article.description || '').split(' ').length / 200),
       };
     }));
 
@@ -233,14 +238,17 @@ module.exports = async (req, res) => {
     articles = deduplicateArticles(articles);
     console.log(`🔄 Deduplicated: ${articles.length} unique articles`);
 
-    // Filter out incomplete articles - keep only articles with substantial content
+    // Filter out incomplete articles - keep articles with ANY substantial content
     articles = articles.filter(a => {
-      const hasContent = (a.content && a.content.length > 200) || 
-                        (a.contentHtml && a.contentHtml.length > 200) ||
-                        (a.description && a.description.length > 150);
+      const hasContent = (a.content && a.content.length > 100) || 
+                        (a.contentHtml && a.contentHtml.length > 100) ||
+                        (a.description && a.description.length > 80) ||
+                        (a.summary && a.summary.length > 80);
       const hasTitle = a.title && a.title.length > 10;
       return hasContent && hasTitle;
     });
+    
+    console.log(`✅ Filtered to ${articles.length} complete articles`);
 
     // Sort: prioritize video articles first then preserve original relative ordering
     articles.sort((a,b) => {

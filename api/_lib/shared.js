@@ -406,25 +406,41 @@ async function fetchFromFeeds(feedUrls = []) {
   return allArticles;
 }
 
-async function summarizeWithAI(text, maxLength = 160, retries = 2) {
-  if (!genAI || !text) return text.slice(0, maxLength);
+async function summarizeWithAI(text, maxLength = 300, retries = 2) {
+  if (!genAI || !text) {
+    // Better fallback: extract first few sentences intelligently
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+    let summary = '';
+    for (const sent of sentences) {
+      if ((summary + sent).length > maxLength) break;
+      summary += sent;
+    }
+    return summary || text.slice(0, maxLength);
+  }
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const prompt = `Summarize this news article in ${maxLength} characters or less:\n\n${text}`;
+      const prompt = `Write a comprehensive 3-4 sentence summary of this news article. Include key facts, people involved, and why it matters. Keep it under ${maxLength} characters:\n\n${text.slice(0, 2000)}`;
       
       const result = await Promise.race([
         model.generateContent(prompt),
         new Promise((_, reject) => setTimeout(() => reject(new Error('AI timeout')), 10000))
       ]);
       
-      return result.response.text().slice(0, maxLength);
+      const summary = result.response.text().trim();
+      return summary.length > maxLength ? summary.slice(0, maxLength - 3) + '...' : summary;
     } catch (error) {
       console.error(`AI summarize error (attempt ${attempt + 1}/${retries + 1}):`, error.message);
       if (attempt === retries) {
-        // Final fallback: return truncated text
-        return text.slice(0, maxLength);
+        // Better fallback: extract first few sentences
+        const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+        let summary = '';
+        for (const sent of sentences) {
+          if ((summary + sent).length > maxLength) break;
+          summary += sent;
+        }
+        return summary || text.slice(0, maxLength);
       }
       // Wait before retry
       await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
@@ -566,6 +582,59 @@ function scoreLean(text = '', source = '', url = '') {
   return { score: Number(norm.toFixed(3)), label, reasons };
 }
 
+// AI-enhanced political lean detection with better accuracy
+async function detectPoliticalLeanAI(title, description, content) {
+  if (!genAI) {
+    // Fallback to keyword-based if no AI
+    return scoreLean(`${title} ${description} ${content}`);
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const text = `${title}\n${description}\n${content || ''}`.slice(0, 1500);
+    
+    const prompt = `Analyze the political lean of this news article. Consider:
+- Source credibility and known bias
+- Language and framing choices
+- Which political party/ideology it favors
+- Keywords and talking points used
+
+Article:
+${text}
+
+Respond with ONLY a JSON object in this format:
+{
+  "lean": "left" | "lean-left" | "center" | "lean-right" | "right",
+  "score": -1.0 to 1.0 (negative=left, positive=right),
+  "confidence": 0.0 to 1.0,
+  "reasoning": "brief explanation"
+}`;
+
+    const result = await Promise.race([
+      model.generateContent(prompt),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('AI timeout')), 8000))
+    ]);
+    
+    const responseText = result.response.text().trim();
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        label: parsed.lean || 'center',
+        score: parsed.score || 0,
+        confidence: parsed.confidence || 0.5,
+        reasons: [parsed.reasoning || 'AI analysis']
+      };
+    }
+  } catch (error) {
+    console.error('AI political lean detection failed:', error.message);
+  }
+  
+  // Fallback to keyword-based
+  return scoreLean(`${title} ${description} ${content}`);
+}
+
 // SMART DEDUPLICATION: Remove duplicate articles across sources
 function deduplicateArticles(articles) {
   const seen = new Map();
@@ -654,6 +723,7 @@ module.exports = {
   detectCategory,
   inferLean,
   scoreLean,
+  detectPoliticalLeanAI,
   stripHtml,
   REGIONAL_FEEDS,
   toEmbedFromUrl,
