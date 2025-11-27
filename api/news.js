@@ -1,4 +1,5 @@
-const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, genAI, toEmbedFromUrl, extractMediaFromHtml } = require('./_lib/shared');
+const { fetchFromRSS, summarizeWithAI, detectCategory, scoreLean, genAI, toEmbedFromUrl, extractMediaFromHtml, deduplicateArticles, detectTrendingTopics } = require('./_lib/shared');
+const { cache } = require('./_lib/cache');
 let fetch;
 try { fetch = require('node-fetch'); } catch { /* Node 18 runtime may have global fetch */ }
 const cheerio = require('cheerio');
@@ -84,7 +85,51 @@ module.exports = async (req, res) => {
   }
 
   try {
-  const { category = 'breaking', preference = 'balanced', query, userLean } = req.query;
+  const { category = 'breaking', preference = 'balanced', query, userLean, includeTrending = 'true' } = req.query;
+    
+    // CHECK CACHE FIRST (instant response!)
+    const cached = cache.get(category, preference);
+    if (cached && !cached.stale) {
+      console.log(`✅ Cache HIT for ${category} (age: ${Date.now() - cache.cache.get(cache.key(category, preference)).timestamp}ms)`);
+      
+      // Add trending topics if requested
+      let trending = null;
+      if (includeTrending === 'true') {
+        trending = cache.getTrending() || await detectTrendingTopics(cached.data);
+        if (!cache.getTrending()) cache.setTrending(trending);
+      }
+      
+      return res.status(200).json({ 
+        articles: cached.data,
+        trending,
+        cached: true,
+        cacheStats: cache.stats()
+      });
+    }
+    
+    // Serve stale cache while refreshing in background
+    if (cached && cached.stale) {
+      console.log(`⚡ Serving STALE cache for ${category}, refreshing in background...`);
+      
+      // Return stale data immediately
+      const response = { 
+        articles: cached.data,
+        trending: cache.getTrending(),
+        cached: true,
+        stale: true
+      };
+      
+      // Trigger background refresh (fire and forget)
+      if (await cache.acquireLock(`refresh:${category}:${preference}`)) {
+        refreshCacheInBackground(category, preference).finally(() => {
+          cache.releaseLock(`refresh:${category}:${preference}`);
+        });
+      }
+      
+      return res.status(200).json(response);
+    }
+    
+    console.log(`❌ Cache MISS for ${category}, fetching fresh...`);
     
     let articles = [];
     try {
@@ -110,7 +155,9 @@ module.exports = async (req, res) => {
           content: '',
           contentHtml: '',
           media: { images: [], videos: [] },
-        }]
+        }],
+        trending: [],
+        cached: false
       });
     }
     
@@ -182,6 +229,10 @@ module.exports = async (req, res) => {
     })());
     await Promise.all(runners);
 
+    // SMART DEDUPLICATION: Remove duplicate articles
+    articles = deduplicateArticles(articles);
+    console.log(`🔄 Deduplicated: ${articles.length} unique articles`);
+
     // Filter out incomplete articles - keep only articles with substantial content
     articles = articles.filter(a => {
       const hasContent = (a.content && a.content.length > 200) || 
@@ -234,9 +285,58 @@ module.exports = async (req, res) => {
       }
     } // balanced: keep existing recency-based order
 
-    res.status(200).json({ articles });
+    // CACHE THE RESULTS for lightning-fast future requests
+    cache.set(category, articles, preference);
+    console.log(`💾 Cached ${articles.length} articles for ${category}`);
+
+    // AI TRENDING TOPICS detection
+    let trending = [];
+    if (includeTrending === 'true') {
+      trending = cache.getTrending();
+      if (!trending) {
+        trending = await detectTrendingTopics(articles);
+        cache.setTrending(trending);
+        console.log(`🔥 Detected ${trending.length} trending topics`);
+      }
+    }
+
+    res.status(200).json({ 
+      articles,
+      trending,
+      cached: false,
+      cacheStats: cache.stats()
+    });
   } catch (error) {
     console.error('News API error:', error);
-    res.status(500).json({ error: 'Failed to fetch news', articles: [] });
+    res.status(500).json({ error: 'Failed to fetch news', articles: [], trending: [] });
   }
 };
+
+// Background refresh function (non-blocking)
+async function refreshCacheInBackground(category, preference) {
+  try {
+    console.log(`🔄 Background refresh started for ${category}...`);
+    const articles = await fetchFromRSS(category);
+    
+    if (articles && articles.length > 0) {
+      // Quick processing without slow enrichment
+      const processed = articles.map(article => ({
+        ...article,
+        lean: scoreLean(`${article.title} ${article.description}`, article.source?.name || '', article.url || ''),
+        id: article.url,
+        readTime: Math.ceil((article.content || article.description).split(' ').length / 200),
+      }));
+      
+      const deduplicated = deduplicateArticles(processed);
+      cache.set(category, deduplicated, preference);
+      
+      // Update trending topics
+      const trending = await detectTrendingTopics(deduplicated);
+      cache.setTrending(trending);
+      
+      console.log(`✅ Background refresh complete: ${deduplicated.length} articles cached`);
+    }
+  } catch (error) {
+    console.error('Background refresh failed:', error.message);
+  }
+}

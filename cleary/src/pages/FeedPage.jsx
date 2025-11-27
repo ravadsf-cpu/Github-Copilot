@@ -48,6 +48,9 @@ const FeedPage = () => {
     setAiArticles({ articles: aiReturnedArticles, category });
   };
 
+  // View mode for feed layout (grid vs stack)
+  const [viewMode, setViewMode] = useState('grid');
+
   useEffect(() => {
     const load = async () => {
       // 1. INSTANT: Show cached or mock articles immediately (NO loading spinner)
