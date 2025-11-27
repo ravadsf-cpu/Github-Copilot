@@ -53,6 +53,16 @@ const FeedPage = () => {
 
   useEffect(() => {
     const load = async () => {
+      // Cache busting: clear old cache if version changed
+      const APP_VERSION = '1.1.0'; // Increment this to force cache refresh
+      const cachedVersion = localStorage.getItem('app_version');
+      if (cachedVersion !== APP_VERSION) {
+        console.log('App version changed, clearing cache...');
+        localStorage.removeItem('fastArticles');
+        localStorage.removeItem('fastArticles_ts');
+        localStorage.setItem('app_version', APP_VERSION);
+      }
+
       // 1. INSTANT: Show cached or mock articles immediately (NO loading spinner)
       if (!initialLoadRef.current) {
         try {
