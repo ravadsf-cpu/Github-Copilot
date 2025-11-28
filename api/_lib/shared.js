@@ -23,35 +23,53 @@ const RSS_FEEDS = {
     'https://moxie.foxnews.com/google-publisher/latest.xml',
     'https://feeds.reuters.com/reuters/topNews',
     'http://rss.cnn.com/rss/cnn_topstories.rss',
+    'https://www.aljazeera.com/xml/rss/all.xml',
+    'https://feeds.washingtonpost.com/rss/national',
+    'https://feeds.nbcnews.com/nbcnews/public/news',
+    'https://www.cbsnews.com/latest/rss/main',
+    'https://feeds.abcnews.com/abcnews/topstories',
   ],
   politics: [
     'https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml',
     'https://www.theguardian.com/politics/rss',
     'https://moxie.foxnews.com/google-publisher/politics.xml',
     'http://rss.cnn.com/rss/cnn_allpolitics.rss',
+    'https://feeds.washingtonpost.com/rss/politics',
+    'https://thehill.com/feed/',
+    'https://www.politico.com/rss/politics08.xml',
   ],
   health: [
     'https://rss.nytimes.com/services/xml/rss/nyt/Health.xml',
     'https://www.theguardian.com/society/health/rss',
     'http://rss.cnn.com/rss/cnn_health.rss',
+    'https://feeds.washingtonpost.com/rss/health',
+    'https://www.cbsnews.com/latest/rss/health',
   ],
   science: [
     'https://www.sciencedaily.com/rss/all.xml',
     'https://rss.nytimes.com/services/xml/rss/nyt/Science.xml',
     'http://rss.cnn.com/rss/cnn_tech.rss',
+    'https://www.wired.com/feed/rss',
+    'https://www.theverge.com/rss/index.xml',
+    'https://feeds.arstechnica.com/arstechnica/index',
   ],
   world: [
     'https://feeds.bbci.co.uk/news/world/rss.xml',
     'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
     'https://www.aljazeera.com/xml/rss/all.xml',
     'https://feeds.reuters.com/Reuters/worldNews',
-    'https://www.theguardian.com/world/rss'
+    'https://www.theguardian.com/world/rss',
+    'https://feeds.washingtonpost.com/rss/world',
+    'https://feeds.abcnews.com/abcnews/internationalheadlines',
   ],
   business: [
     'https://feeds.bbci.co.uk/news/business/rss.xml',
     'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml',
     'https://feeds.reuters.com/reuters/businessNews',
-    'https://www.theguardian.com/uk/business/rss'
+    'https://www.theguardian.com/uk/business/rss',
+    'https://feeds.washingtonpost.com/rss/business',
+    'https://www.cnbc.com/id/100003114/device/rss/rss.html',
+    'https://feeds.bloomberg.com/markets/news.rss',
   ],
 };
 
@@ -214,7 +232,7 @@ async function fetchFromRSS(category = 'breaking', retries = 2) {
           new Promise((_, reject) => setTimeout(() => reject(new Error('RSS timeout')), 8000))
         ]);
         
-        const articles = feed.items.slice(0, 15).map((item) => {
+        const articles = feed.items.slice(0, 30).map((item) => {
         let fullContent = item['content:encoded'] || item.content || item.summary || item.description || '';
         
         // Extract media BEFORE sanitizing to preserve img/iframe tags
@@ -337,7 +355,7 @@ async function fetchFromFeeds(feedUrls = []) {
   for (const feedUrl of feedUrls) {
     try {
       const feed = await rssParser.parseURL(feedUrl);
-      const articles = feed.items.slice(0, 15).map((item) => {
+      const articles = feed.items.slice(0, 30).map((item) => {
         let fullContent = item['content:encoded'] || item.content || item.summary || item.description || '';
         
         // Extract media BEFORE sanitizing to preserve img/iframe tags

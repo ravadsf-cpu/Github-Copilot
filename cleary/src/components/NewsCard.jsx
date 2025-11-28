@@ -239,17 +239,45 @@ const NewsCard = ({ article, index }) => {
             </a>
           </div>
 
-          {/* Content area: default FULL content, optional Summary */}
+          {/* Content area: default FULL content with videos, optional Summary */}
           {view === 'full' ? (
-            <div className="text-gray-300 text-sm leading-relaxed max-h-96 overflow-y-auto pr-2 custom-scroll">
-              {article.contentHtml ? (
-                <div 
-                  className="prose prose-invert prose-sm max-w-none prose-headings:text-white prose-p:text-gray-300 prose-a:text-purple-400 prose-strong:text-white"
-                  dangerouslySetInnerHTML={{ __html: article.contentHtml }} 
-                />
-              ) : (
-                <p className="whitespace-pre-wrap">{article.content || article.description || article.summary || 'No content available'}</p>
+            <div className="space-y-3">
+              {/* Embedded videos at top of content */}
+              {article.media?.videos?.length > 0 && (
+                <div className="space-y-2">
+                  {article.media.videos.slice(0, 2).map((video, idx) => (
+                    <div key={idx} className="relative w-full aspect-video bg-black/20 rounded-lg overflow-hidden">
+                      {video.kind === 'iframe' && video.src ? (
+                        <iframe
+                          src={video.src}
+                          className="w-full h-full"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={`Video ${idx + 1}`}
+                        />
+                      ) : video.kind === 'video' && video.src ? (
+                        <video controls className="w-full h-full" preload="metadata">
+                          <source src={video.src} type={video.type || 'video/mp4'} />
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
               )}
+              
+              {/* Article text content */}
+              <div className="text-gray-300 text-sm leading-relaxed max-h-96 overflow-y-auto pr-2 custom-scroll">
+                {article.contentHtml ? (
+                  <div 
+                    className="prose prose-invert prose-sm max-w-none prose-headings:text-white prose-p:text-gray-300 prose-a:text-purple-400 prose-strong:text-white"
+                    dangerouslySetInnerHTML={{ __html: article.contentHtml }} 
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap">{article.content || article.description || article.summary || 'No content available'}</p>
+                )}
+              </div>
             </div>
           ) : (
             <p className="text-gray-300 text-sm leading-relaxed max-h-32 overflow-y-auto pr-2 custom-scroll">
