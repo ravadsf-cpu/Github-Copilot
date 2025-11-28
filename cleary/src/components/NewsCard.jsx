@@ -7,6 +7,8 @@ import { postInteraction } from '../utils/aiService';
 
 const NewsCard = ({ article, index }) => {
   const [isHovered, setIsHovered] = useState(false);
+  // Default: show FULL article content. Users can toggle to Summary.
+  const [view, setView] = useState('full'); // 'full' | 'summary'
   const [showLeanTooltip, setShowLeanTooltip] = useState(false);
   const { trackArticleInteraction, setBackgroundMood } = useApp();
 
@@ -208,13 +210,52 @@ const NewsCard = ({ article, index }) => {
             </div>
           </div>
 
-          <h3 className="text-lg font-semibold text-white leading-snug group-hover:text-purple-300 transition-colors line-clamp-2">
+          <h3 className="text-lg font-semibold text-white leading-snug group-hover:text-purple-300 transition-colors">
             {article.title}
           </h3>
 
-          <p className="text-gray-400 text-sm leading-relaxed line-clamp-4">
-            {article.summary || article.description}
-          </p>
+          {/* View toggle: Full | Summary */}
+          <div className="flex items-center gap-2 text-xs mb-2">
+            <button
+              className={`px-2 py-1 rounded-md border ${view === 'full' ? 'border-white/40 text-white' : 'border-white/10 text-gray-400 hover:text-white/80'}`}
+              onClick={(e) => { e.preventDefault(); setView('full'); }}
+            >
+              Full Article
+            </button>
+            <button
+              className={`px-2 py-1 rounded-md border ${view === 'summary' ? 'border-white/40 text-white' : 'border-white/10 text-gray-400 hover:text-white/80'}`}
+              onClick={(e) => { e.preventDefault(); setView('summary'); }}
+            >
+              Summary
+            </button>
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto inline-flex items-center gap-1 text-xs text-purple-300 hover:text-purple-200"
+              onClick={(e)=> e.stopPropagation()}
+            >
+              <ExternalLink className="w-3 h-3" /> View Original
+            </a>
+          </div>
+
+          {/* Content area: default FULL content, optional Summary */}
+          {view === 'full' ? (
+            <div className="text-gray-300 text-sm leading-relaxed max-h-96 overflow-y-auto pr-2 custom-scroll">
+              {article.contentHtml ? (
+                <div 
+                  className="prose prose-invert prose-sm max-w-none prose-headings:text-white prose-p:text-gray-300 prose-a:text-purple-400 prose-strong:text-white"
+                  dangerouslySetInnerHTML={{ __html: article.contentHtml }} 
+                />
+              ) : (
+                <p className="whitespace-pre-wrap">{article.content || article.description || article.summary || 'No content available'}</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-300 text-sm leading-relaxed max-h-32 overflow-y-auto pr-2 custom-scroll">
+              {article.summary || article.description || (article.content || '').slice(0, 600)}
+            </p>
+          )}
 
           {/* Political lean indicator with color coding */}
           {article.lean && article.lean !== 'center' && (

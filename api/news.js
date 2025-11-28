@@ -161,14 +161,14 @@ module.exports = async (req, res) => {
       });
     }
     
-    // Enhanced AI processing with better summaries and political classification
+    // Enhanced AI processing - skip summaries (show full content by default), focus on classification
     const useAI = genAI && articles.length < 30; // Use AI for batches up to 30
     
     articles = await Promise.all(articles.map(async (article) => {
-      // Generate comprehensive 3-4 sentence summary (300 chars)
-      const summary = useAI 
-        ? await summarizeWithAI(article.content || article.description || article.title, 300)
-        : (article.description || article.content || '').slice(0, 300);
+      // Keep original description as summary, or generate brief one from first sentences
+      const summary = article.description || 
+        (article.content || '').match(/[^.!?]+[.!?]+/g)?.slice(0, 3).join(' ').slice(0, 300) || 
+        (article.content || '').slice(0, 300);
       
       const detectedCategory = useAI
         ? await detectCategory(article.title, article.description)
