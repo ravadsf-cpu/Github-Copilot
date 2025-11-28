@@ -15,14 +15,29 @@ async function tryFetch(url, options = {}, timeoutMs = 2500) {
   }
 }
 
-async function scrapeMedia(url) {
+async function scrapeFullArticle(url) {
   try {
-    const resp = await tryFetch(url, { redirect: 'follow' });
+    const resp = await tryFetch(url, { redirect: 'follow' }, 5000);
     if (!resp || !resp.ok) return { videos: [], images: [] };
     const html = await resp.text();
     const $ = cheerio.load(html);
     const collectedImages = [];
     const collectedVideos = [];
+
+    // Extract full article content from common selectors
+    let fullContent = '';
+    const contentSelectors = [
+      'article', '.article-body', '.story-body', '.post-content', '.entry-content',
+      '[itemprop="articleBody"]', '.article-content', 'main article', '.content-body'
+    ];
+    
+    for (const selector of contentSelectors) {
+      const elem = $(selector).first();
+      if (elem.length && elem.text().trim().length > 500) {
+        fullContent = elem.html();
+        break;
+      }
+    }
 
     // OG / Twitter meta
     $('meta[property="og:image"], meta[name="og:image"], meta[property="twitter:image"], meta[name="twitter:image"]').each((_, el) => {
@@ -66,10 +81,10 @@ async function scrapeMedia(url) {
     const videos = dedupMedia(collectedVideos, v => v.src);
     const images = dedupMedia(collectedImages, u => u);
 
-    return { videos, images };
+    return { videos, images, content: fullContent ? cheerio.load(fullContent).text().trim() : null, contentHtml: fullContent };
   } catch (e) {
-    console.warn('scrapeMedia failed for', url, e.message);
-    return { videos: [], images: [] };
+    console.warn('scrapeFullArticle failed for', url, e.message);
+    return { videos: [], images: [], content: null, contentHtml: null };
   }
 }
 
@@ -207,22 +222,29 @@ module.exports = async (req, res) => {
           const needsVideo = !a.media || !(a.media.videos && a.media.videos.length);
           const needsImage = !a.urlToImage;
           if (needsVideo || needsImage) {
-            const m = await scrapeMedia(a.url);
-            if (m.videos && m.videos.length) {
+              const scraped = await scrapeFullArticle(a.url);
+            
+              // Update content if scraped content is longer
+              if (scraped.content && scraped.content.length > (a.content || '').length) {
+                a.content = scraped.content;
+                a.contentHtml = scraped.contentHtml || scraped.content;
+              }
+            
+              if (scraped.videos && scraped.videos.length) {
               a.media = a.media || { images: [], videos: [] };
-              a.media.videos = m.videos;
+                a.media.videos = scraped.videos;
               // Promote first video thumbnail as card image if none
-              if (!a.urlToImage && m.videos[0].thumbnail) {
-                a.urlToImage = m.videos[0].thumbnail;
+                if (!a.urlToImage && scraped.videos[0].thumbnail) {
+                  a.urlToImage = scraped.videos[0].thumbnail;
               }
             }
-            if ((!a.urlToImage || a.urlToImage === '') && m.images && m.images.length) {
-              a.urlToImage = m.images[0];
+              if ((!a.urlToImage || a.urlToImage === '') && scraped.images && scraped.images.length) {
+                a.urlToImage = scraped.images[0];
             }
-            if (m.images && m.images.length) {
+              if (scraped.images && scraped.images.length) {
               a.media = a.media || { images: [], videos: [] };
               const existing = (a.media.images || []).map(i => i.src || i);
-              const merged = [...existing, ...m.images];
+                const merged = [...existing, ...scraped.images];
               const seenImg = new Set();
               a.media.images = merged.filter(u => { if (!u || seenImg.has(u)) return false; seenImg.add(u); return true; }).map(u => (typeof u === 'string' ? { src: u } : u));
             }
@@ -237,6 +259,24 @@ module.exports = async (req, res) => {
     // SMART DEDUPLICATION: Remove duplicate articles
     articles = deduplicateArticles(articles);
     console.log(`🔄 Deduplicated: ${articles.length} unique articles`);
+
+      // DIVERSIFY SOURCES: Limit articles per source to avoid CNN/NYT domination
+      const diversified = [];
+      const sourceCount = new Map();
+      const MAX_PER_SOURCE = 5;
+    
+      for (const article of articles) {
+        const sourceName = (typeof article.source === 'string' ? article.source : article.source?.name || 'Unknown').toLowerCase();
+        const count = sourceCount.get(sourceName) || 0;
+      
+        if (count < MAX_PER_SOURCE) {
+          diversified.push(article);
+          sourceCount.set(sourceName, count + 1);
+        }
+      }
+    
+      articles = diversified;
+      console.log(`📊 Diversified to ${articles.length} articles from ${sourceCount.size} sources`);
 
     // Filter out incomplete articles - keep articles with ANY substantial content
     articles = articles.filter(a => {

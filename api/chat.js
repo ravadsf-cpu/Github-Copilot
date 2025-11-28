@@ -22,8 +22,32 @@ module.exports = async (req, res) => {
   try {
     const { message, context, politicalLean, preference } = req.body;
     
-    // IMPORTANT: Always use heuristic fallback for now to ensure varied responses
-    // Skip AI calls temporarily until API keys are properly configured
+      // Try to use AI for free-form responses first
+      if (genAI && message && message.trim().length > 5) {
+        try {
+          const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+          const prompt = `You are a helpful news assistant. The user asked: "${message}"
+
+  Provide a brief, conversational response (2-3 sentences). If they're asking about news topics, suggest checking specific categories like politics, business, health, science, or world news. Be friendly and concise.`;
+
+          const result = await Promise.race([
+            model.generateContent(prompt),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('AI timeout')), 8000))
+          ]);
+
+          const aiResponse = result.response.text().trim();
+          if (aiResponse && aiResponse.length > 20) {
+            return res.status(200).json({ 
+              response: aiResponse,
+              category: 'general'
+            });
+          }
+        } catch (aiError) {
+          console.error('AI chat error:', aiError.message);
+          // Fall through to keyword-based responses
+        }
+      }
+    
     const msg = (message || '').toLowerCase();
 
     // Simple in-memory cache per serverless instance
