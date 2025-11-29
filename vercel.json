@@ -4,7 +4,9 @@
   "installCommand": "npm install && cd cleary && npm install",
   "framework": null,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" }
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/main\.(.*)\.js", "destination": "/static/js/main.$1.js" },
+    { "source": "/main\.(.*)\.css", "destination": "/static/css/main.$1.css" }
   ],
   "routes": [
     { "handle": "filesystem" },
