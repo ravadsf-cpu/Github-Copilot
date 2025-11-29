@@ -1,6 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+// Load env from .env.local (preferred) falling back to .env
+try {
+  const path = require('path');
+  const dotenv = require('dotenv');
+  const localEnvPath = path.resolve(__dirname, '../.env.local');
+  const defaultEnvPath = path.resolve(__dirname, '../.env');
+  // Try .env.local first
+  const localResult = dotenv.config({ path: localEnvPath });
+  if (localResult.error) {
+    // Fallback to .env
+    dotenv.config({ path: defaultEnvPath });
+  }
+} catch {}
 const fetch = require('node-fetch');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Parser = require('rss-parser');
@@ -1773,13 +1785,22 @@ Format your response as JSON:
 const gmailTokensByUser = new Map(); // userId -> tokens
 
 function createOAuthClient() {
-  const { GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT } = process.env;
-  if (!GOOGLE_OAUTH_CLIENT_ID || !GOOGLE_OAUTH_CLIENT_SECRET || !GOOGLE_OAUTH_REDIRECT) {
-    console.warn('[oauth] Missing env vars: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, or GOOGLE_OAUTH_REDIRECT');
+  // Support both naming conventions
+  const CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+  const CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  const REDIRECT_URI = process.env.GOOGLE_OAUTH_REDIRECT || process.env.OAUTH_REDIRECT_URI;
+  console.log('[oauth] env check', {
+    CLIENT_ID,
+    CLIENT_SECRET: CLIENT_SECRET ? '***set***' : undefined,
+    REDIRECT_URI
+  });
+
+  if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
+    console.warn('[oauth] Missing env vars: GOOGLE_OAUTH_CLIENT_ID/GOOGLE_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET/GOOGLE_CLIENT_SECRET, or GOOGLE_OAUTH_REDIRECT/OAUTH_REDIRECT_URI');
     return null;
   }
   try {
-    return new google.auth.OAuth2(GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT);
+    return new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
   } catch (e) {
     console.error('[oauth] Failed to create OAuth client:', e.message);
     return null;
@@ -1794,7 +1815,7 @@ app.get('/api/auth/google/init', (req, res) => {
     if (!client) {
       return res.status(503).json({
         error: 'missing_oauth_config',
-        message: 'Google OAuth environment variables are missing. Set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT.'
+        message: 'Google OAuth environment variables are missing. Set either GOOGLE_OAUTH_CLIENT_ID/GOOGLE_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET/GOOGLE_CLIENT_SECRET, and GOOGLE_OAUTH_REDIRECT/OAUTH_REDIRECT_URI.'
       });
     }
     const scopes = [
@@ -1827,7 +1848,15 @@ app.get('/api/auth/google/callback', async (req, res) => {
     // Persist tokens in memory
     gmailTokensByUser.set(state || 'anon', tokens);
     console.log('[oauth] stored tokens for user=', state, 'scopes=', tokens.scope);
-    // Simple close page response
+    // Redirect to post-login page if specified, else provide window-close helper
+    const postLoginRedirect = process.env.OAUTH_POST_LOGIN_REDIRECT;
+    if (postLoginRedirect) {
+      try {
+        return res.redirect(postLoginRedirect);
+      } catch (e) {
+        console.warn('[oauth] redirect failed, falling back to close-page:', e.message);
+      }
+    }
     res.send('<html><body><script>window.close();</script>Authentication complete. You can close this window.</body></html>');
   } catch (e) {
     console.error('[oauth] callback error:', e.message);

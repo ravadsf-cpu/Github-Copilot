@@ -387,3 +387,18 @@ export const Info = ({ className = "w-6 h-6", ...props }) => (
     <line x1="12" y1="8" x2="12.01" y2="8"/>
   </svg>
 );
+
+export const Eye = ({ className = "w-6 h-6", ...props }) => (
+  <svg className={className} {...iconDefaults} {...props} viewBox="0 0 24 24">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+export const RefreshCw = ({ className = "w-6 h-6", ...props }) => (
+  <svg className={className} {...iconDefaults} {...props} viewBox="0 0 24 24">
+    <polyline points="23 4 23 10 17 10"/>
+    <polyline points="1 20 1 14 7 14"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </svg>
+);

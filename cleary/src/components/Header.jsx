@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Newspaper, BarChart2, Video, User, LogOut, Vote } from './Icons';
+import { Newspaper, BarChart2, Video, Film, User, LogOut, Vote } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -12,6 +12,7 @@ const Header = () => {
 
   const navItems = [
     { path: '/feed', label: 'Feed', icon: Newspaper },
+    { path: '/shorts', label: 'Shorts', icon: Film },
     { path: '/elections', label: 'Elections', icon: Vote },
     { path: '/dashboard', label: 'Insights', icon: BarChart2 },
     { path: '/videos', label: 'Videos', icon: Video },

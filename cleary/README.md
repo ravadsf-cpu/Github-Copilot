@@ -170,6 +170,10 @@ Notes:
 - Scopes used: `openid profile email gmail.readonly`.
 - Refresh tokens only returned on the first consent with `prompt=consent` or if revoked.
 - Add additional scopes (e.g., `gmail.modify`) if write access needed.
+- Fallback naming: The server supports either the `GOOGLE_OAUTH_*` trio or the older `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `OAUTH_REDIRECT_URI` names. Prefer the `GOOGLE_OAUTH_*` names for consistency; the other names are automatically detected if the preferred ones are absent.
+- Additional optional env var: `OAUTH_POST_LOGIN_REDIRECT` – if set, the callback will redirect the browser to this URL instead of showing a close-page message.
+- Required for secure sessions: set a strong `SESSION_SECRET` (never commit the production value).
+- AI features: set `GEMINI_API_KEY` to enable enhanced chat & enrichment; without it, the system will fall back to heuristic responses.
 
 ### Colors & Theme
 Edit `tailwind.config.js` to customize the color scheme.

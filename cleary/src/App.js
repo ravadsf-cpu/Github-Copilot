@@ -14,6 +14,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import CategoryPage from './pages/CategoryPage';
 import VideosPage from './pages/VideosPage';
+import ShortsPage from './pages/ShortsPage';
 import ArticlePage from './pages/ArticlePage';
 import ElectionPage from './pages/ElectionPage';
 import LoginPage from './pages/LoginPage';
@@ -71,6 +72,7 @@ function App() {
             <Route path="/categories/:category" element={<ProtectedRoute><CategoryPage /></ProtectedRoute>} />
             <Route path="/article/:id" element={<ProtectedRoute><ArticlePage /></ProtectedRoute>} />
             <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
+            <Route path="/shorts" element={<ProtectedRoute><ShortsPage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AppProvider>
