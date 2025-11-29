@@ -1,5 +1,5 @@
 /* cleary service worker: caches API responses and images for faster loads */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = `cleary-shell-${VERSION}`;
 const API_CACHE = `cleary-api-${VERSION}`;
 const IMG_CACHE = `cleary-img-${VERSION}`;
@@ -119,5 +119,8 @@ self.addEventListener('message', event => {
   const { action } = event.data || {};
   if (action === 'CLEAR_API_CACHE') {
     event.waitUntil(caches.delete(API_CACHE));
+  }
+  if (action === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });

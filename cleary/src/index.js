@@ -26,6 +26,12 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
+      .then(reg => {
+        if (reg.waiting) {
+          // trigger immediate activation of updated SW
+          reg.waiting.postMessage({ action: 'SKIP_WAITING' });
+        }
+      })
       .catch(() => {
         // no-op: SW registration can fail in dev or unsupported contexts
       });
