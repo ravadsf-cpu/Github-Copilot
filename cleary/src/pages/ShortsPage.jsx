@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Film, RefreshCw, Search, TrendingUp, Zap } from '../components/Icons';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Header from '../components/Header';
-import VideoCard from '../components/VideoCard';
+import ShortFeedCard from '../components/ShortFeedCard';
 
 /**
  * ShortsPage - Video-first news feed
@@ -16,8 +16,9 @@ const ShortsPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // newest, popular, videoCount, engagement
-  const [visibleCount, setVisibleCount] = useState(1); // lazy load
+  const [visibleCount, setVisibleCount] = useState(12); // initial prefetch list size
   const [engagementMap, setEngagementMap] = useState({});
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     fetchShorts();
@@ -78,24 +79,56 @@ const ShortsPage = () => {
     return 0;
   });
 
-  // Slice for lazy loading
+  // Slice for prefetch; we still keep list length manageable
   const visibleShorts = sortedShorts.slice(0, visibleCount);
 
-  // Intersection observer for auto load more
+  // Intersection observers: detect which card is currently centered in viewport
   useEffect(() => {
-    if (visibleCount >= sortedShorts.length) return;
-    const sentinel = document.getElementById('shorts-sentinel');
-    if (!sentinel) return;
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          setVisibleCount(c => Math.min(c + 6, sortedShorts.length));
-        }
-      });
-    }, { rootMargin: '200px' });
-    observer.observe(sentinel);
+    const items = Array.from(document.querySelectorAll('[data-short-index]'));
+    if (!items.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            const idxAttr = e.target.getAttribute('data-short-index');
+            if (idxAttr) setActiveIndex(parseInt(idxAttr, 10));
+          }
+        });
+      },
+      { root: null, threshold: 0.6 }
+    );
+    items.forEach(el => observer.observe(el));
     return () => observer.disconnect();
-  }, [visibleCount, sortedShorts.length]);
+  }, [visibleShorts.length]);
+
+  // Keyboard navigation (arrow up/down)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'ArrowDown') {
+        setActiveIndex(i => Math.min(i + 1, visibleShorts.length - 1));
+        scrollToIndex(activeIndex + 1);
+      } else if (e.key === 'ArrowUp') {
+        setActiveIndex(i => Math.max(i - 1, 0));
+        scrollToIndex(activeIndex - 1);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [activeIndex, visibleShorts.length]);
+
+  const scrollToIndex = (idx) => {
+    const el = document.querySelector(`[data-short-index="${idx}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleAdvance = () => {
+    const next = activeIndex + 1;
+    if (next < visibleShorts.length) {
+      scrollToIndex(next);
+    }
+  };
 
   const handleEngagementUpdate = (key, data) => {
     setEngagementMap(prev => ({ ...prev, [key]: data }));
@@ -105,7 +138,7 @@ const ShortsPage = () => {
     <AnimatedBackground mood="exciting">
       <Header />
       
-      <main className="container mx-auto px-4 sm:px-6 pt-24 pb-12 min-h-screen">
+  <main className="pt-24 pb-12 min-h-screen">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -286,34 +319,28 @@ const ShortsPage = () => {
           </motion.div>
         )}
 
+        {/* Vertical Shorts Feed */}
         {!loading && sortedShorts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            <AnimatePresence mode="popLayout">
-              {visibleShorts.map((short, index) => (
-                <VideoCard
-                  key={short.url || index}
+          <div className="w-full max-w-screen-sm mx-auto snap-y snap-mandatory overflow-y-auto h-[calc(100vh-96px)] scrollbar-none" style={{ scrollBehavior: 'smooth' }}>
+            {visibleShorts.map((short, index) => (
+              <div key={short.url || index} data-short-index={index} className="snap-start">
+                <ShortFeedCard
                   article={short}
                   index={index}
+                  active={index === activeIndex}
+                  autoPlay
+                  onAdvance={handleAdvance}
                   onEngagement={handleEngagementUpdate}
                 />
-              ))}
-            </AnimatePresence>
-          </motion.div>
+              </div>
+            ))}
+          </div>
         )}
 
-        {/* Load More & Sentinel */}
-        {!loading && visibleCount < sortedShorts.length && (
-          <div className="mt-8 flex flex-col items-center">
-            <button
-              onClick={() => setVisibleCount(c => Math.min(c + 6, sortedShorts.length))}
-              className="px-6 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm backdrop-blur border border-white/10"
-            >Load More ({visibleCount}/{sortedShorts.length})</button>
-            <div id="shorts-sentinel" className="h-4 w-full" />
+        {/* Prefetch more silently when near end */}
+        {!loading && activeIndex > visibleCount - 4 && visibleCount < sortedShorts.length && (
+          <div className="hidden" aria-hidden>
+            {setTimeout(() => setVisibleCount(c => Math.min(c + 12, sortedShorts.length)), 0)}
           </div>
         )}
 
