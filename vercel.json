@@ -5,7 +5,10 @@
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/((?!static|favicon\\.ico|manifest\\.json|asset-manifest\\.json|robots\\.txt|sw\\.js).*)",
+      "destination": "/"
+    }
   ],
   "headers": [
     {
