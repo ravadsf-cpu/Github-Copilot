@@ -1,3 +1,9 @@
 # Force Vercel to pull latest commit
 node_modules
 .git
+
+# Exclude non-essential API routes to stay within Hobby plan function limit
+api/dev-check.js
+api/news-fast.js
+api/election-results.js
+api/cache-status.js
