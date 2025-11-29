@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, ExternalLink, Clock, Eye } from './Icons';
 
@@ -6,9 +6,43 @@ import { Play, ExternalLink, Clock, Eye } from './Icons';
  * VideoCard - Specialized card for displaying video news content
  * Features: Video embed, thumbnail preview, play button, metadata
  */
-const VideoCard = ({ article, index = 0 }) => {
+const VideoCard = ({ article, index = 0, onEngagement }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [comments, setComments] = useState([]);
+
+  const storageKey = 'shortsEngagement';
+  const articleKey = article.url || article.title || ('idx-' + index);
+
+  // Load engagement from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const data = JSON.parse(raw);
+        const e = data[articleKey];
+        if (e) {
+          setLikes(e.likes || 0);
+          setDislikes(e.dislikes || 0);
+          setComments(e.comments || []);
+        }
+      }
+    } catch {}
+  }, [articleKey]);
+
+  function persist(next) {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      const data = raw ? JSON.parse(raw) : {};
+      data[articleKey] = { likes, dislikes, comments, ...next };
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      if (onEngagement) onEngagement(articleKey, data[articleKey]);
+    } catch {}
+  }
 
   const videos = article.media?.videos || [];
   const images = article.media?.images || [];
@@ -40,8 +74,30 @@ const VideoCard = ({ article, index = 0 }) => {
     return date.toLocaleDateString();
   };
 
-  const handlePlay = () => {
-    setIsPlaying(true);
+  const handlePlay = () => setIsPlaying(true);
+
+  const handleLike = () => {
+    setLikes(l => {
+      const nl = l + 1;
+      persist({ likes: nl });
+      return nl;
+    });
+  };
+  const handleDislike = () => {
+    setDislikes(d => {
+      const nd = d + 1;
+      persist({ dislikes: nd });
+      return nd;
+    });
+  };
+  const handleAddComment = () => {
+    if (!commentText.trim()) return;
+    setComments(prev => {
+      const next = [...prev, { id: Date.now(), text: commentText.trim(), ts: new Date().toISOString() }];
+      persist({ comments: next });
+      return next;
+    });
+    setCommentText('');
   };
 
   const renderVideoEmbed = () => {
@@ -189,25 +245,61 @@ const VideoCard = ({ article, index = 0 }) => {
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10">
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors group/link"
-          >
-            <span>Read Full Story</span>
-            <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
-          </a>
-
-          <button
-            onClick={handlePlay}
-            className="flex items-center space-x-1 text-gray-400 hover:text-white text-xs transition-colors"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Watch</span>
-          </button>
+        {/* Actions & Engagement */}
+        <div className="space-y-3 pt-2 border-t border-white/10">
+          <div className="flex items-center justify-between">
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors group/link"
+            >
+              <span>Read</span>
+              <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
+            </a>
+            <button
+              onClick={handlePlay}
+              className="flex items-center space-x-1 text-gray-400 hover:text-white text-xs transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Watch</span>
+            </button>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-3">
+              <button onClick={handleLike} className="px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-green-300">
+                👍 <span className="ml-1 font-medium">{likes}</span>
+              </button>
+              <button onClick={handleDislike} className="px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-red-300">
+                👎 <span className="ml-1 font-medium">{dislikes}</span>
+              </button>
+            </div>
+            <button onClick={() => setShowComments(s => !s)} className="text-gray-400 hover:text-white">
+              💬 {comments.length}
+            </button>
+          </div>
+          {showComments && (
+            <div className="space-y-2">
+              <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                {comments.map(c => (
+                  <div key={c.id} className="text-xs text-gray-300 bg-white/5 rounded px-2 py-1">{c.text}</div>
+                ))}
+                {comments.length === 0 && <div className="text-xs text-gray-500">No comments yet.</div>}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  placeholder="Add comment"
+                  className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-400/50"
+                />
+                <button
+                  onClick={handleAddComment}
+                  className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs rounded"
+                >Post</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

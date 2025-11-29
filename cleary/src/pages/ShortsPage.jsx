@@ -15,7 +15,9 @@ const ShortsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('newest'); // newest, popular, videoCount
+  const [sortBy, setSortBy] = useState('newest'); // newest, popular, videoCount, engagement
+  const [visibleCount, setVisibleCount] = useState(1); // lazy load
+  const [engagementMap, setEngagementMap] = useState({});
 
   useEffect(() => {
     fetchShorts();
@@ -25,10 +27,16 @@ const ShortsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/shorts');
+      // Try primary endpoint, fallback to shorts2
+      let response = await fetch('/api/shorts');
+      if (!response.ok) {
+        response = await fetch('/api/shorts2');
+      }
       if (!response.ok) throw new Error('Failed to fetch shorts');
       const data = await response.json();
       setShorts(data.articles || []);
+      // Reset lazy load
+      setVisibleCount(1);
     } catch (err) {
       console.error('Error fetching shorts:', err);
       setError(err.message);
@@ -58,9 +66,40 @@ const ShortsPage = () => {
       return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
     } else if (sortBy === 'videoCount') {
       return (b.videoCount || 0) - (a.videoCount || 0);
+    } else if (sortBy === 'engagement') {
+      const ea = engagementMap[a.url] || engagementMap[a.title] || { likes:0, dislikes:0 };
+      const eb = engagementMap[b.url] || engagementMap[b.title] || { likes:0, dislikes:0 };
+      // Score: likes - dislikes; disliked items sink
+      const sa = (ea.likes || 0) - (ea.dislikes || 0);
+      const sb = (eb.likes || 0) - (eb.dislikes || 0);
+      if (sb !== sa) return sb - sa;
+      return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
     }
     return 0;
   });
+
+  // Slice for lazy loading
+  const visibleShorts = sortedShorts.slice(0, visibleCount);
+
+  // Intersection observer for auto load more
+  useEffect(() => {
+    if (visibleCount >= sortedShorts.length) return;
+    const sentinel = document.getElementById('shorts-sentinel');
+    if (!sentinel) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setVisibleCount(c => Math.min(c + 6, sortedShorts.length));
+        }
+      });
+    }, { rootMargin: '200px' });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [visibleCount, sortedShorts.length]);
+
+  const handleEngagementUpdate = (key, data) => {
+    setEngagementMap(prev => ({ ...prev, [key]: data }));
+  };
 
   return (
     <AnimatedBackground mood="exciting">
@@ -165,8 +204,9 @@ const ShortsPage = () => {
           <div className="flex items-center space-x-2 overflow-x-auto pb-2">
             <span className="text-gray-400 text-sm whitespace-nowrap">Sort by:</span>
             {[
-              { id: 'newest', label: 'Newest First', icon: TrendingUp },
-              { id: 'videoCount', label: 'Most Videos', icon: Film }
+              { id: 'newest', label: 'Newest', icon: TrendingUp },
+              { id: 'videoCount', label: 'Most Videos', icon: Film },
+              { id: 'engagement', label: 'Top Rated', icon: Zap }
             ].map(({ id, label, icon: Icon }) => (
               <motion.button
                 key={id}
@@ -254,15 +294,27 @@ const ShortsPage = () => {
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             <AnimatePresence mode="popLayout">
-              {sortedShorts.map((short, index) => (
+              {visibleShorts.map((short, index) => (
                 <VideoCard
                   key={short.url || index}
                   article={short}
                   index={index}
+                  onEngagement={handleEngagementUpdate}
                 />
               ))}
             </AnimatePresence>
           </motion.div>
+        )}
+
+        {/* Load More & Sentinel */}
+        {!loading && visibleCount < sortedShorts.length && (
+          <div className="mt-8 flex flex-col items-center">
+            <button
+              onClick={() => setVisibleCount(c => Math.min(c + 6, sortedShorts.length))}
+              className="px-6 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm backdrop-blur border border-white/10"
+            >Load More ({visibleCount}/{sortedShorts.length})</button>
+            <div id="shorts-sentinel" className="h-4 w-full" />
+          </div>
         )}
 
         {/* Results info */}

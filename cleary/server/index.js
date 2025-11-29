@@ -23,6 +23,8 @@ const { google } = require('googleapis');
 const PORT = process.env.PORT || 5001;
 const app = express();
 
+console.log('[startup] server file:', __filename);
+
 app.use(cors());
 app.use(express.json());
 
@@ -489,6 +491,28 @@ function fallbackCategoryDetection(text) {
 }
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// Shorts endpoint (early registration for local dev)
+app.get('/api/shorts', async (req, res) => {
+  try {
+    const shortsHandler = require('../../api/shorts.js');
+    await shortsHandler(req, res);
+  } catch (error) {
+    console.error('[shorts early] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch shorts', message: error.message, articles: [] });
+  }
+});
+
+// Alternate shorts endpoint (fallback)
+app.get('/api/shorts2', async (req, res) => {
+  try {
+    const shortsHandler = require('../../api/shorts.js');
+    await shortsHandler(req, res);
+  } catch (error) {
+    console.error('[shorts2] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch shorts2', message: error.message, articles: [] });
+  }
+});
 
 // Fast news endpoint (target <5s response)
 app.get('/api/news-fast', async (req, res) => {
@@ -1320,6 +1344,26 @@ app.get('/api/lean', (_req, res) => {
   res.json({ lean: inferLean(), counts: userLeanStore });
 });
 
+// Shorts endpoint - delegates to serverless function
+app.get('/api/shorts', async (req, res) => {
+  try {
+    const shortsHandler = require('../../api/shorts.js');
+    await shortsHandler(req, res);
+  } catch (error) {
+    console.error('[shorts] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch shorts', message: error.message, articles: [] });
+  }
+});
+
+// Diagnostic inline shorts test route
+app.get('/api/shorts-inline', (req, res) => {
+  res.json({ ok: true, message: 'inline route live' });
+});
+
+// ------------------------------
+// AI Chat endpoint with intelligent response
+// ------------------------------
+
 // AI chatbot endpoint
 app.post('/api/chat', async (req, res) => {
   try {
@@ -2059,4 +2103,15 @@ app.post('/api/auth/logout', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[cleary-api] listening on http://localhost:${PORT}`);
+  try {
+    const routes = app._router.stack
+      .filter(r => r.route && r.route.path)
+      .map(r => {
+        const methods = Object.keys(r.route.methods).map(m => m.toUpperCase()).join(',');
+        return `${methods} ${r.route.path}`;
+      });
+    console.log('[cleary-api] registered routes:', routes);
+  } catch (e) {
+    console.warn('[cleary-api] failed to list routes:', e.message);
+  }
 });
