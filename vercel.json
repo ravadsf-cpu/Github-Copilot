@@ -4,11 +4,11 @@
   "installCommand": "npm install && cd cleary && npm install",
   "framework": null,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    {
-      "source": "/((?!static|favicon\\.ico|manifest\\.json|asset-manifest\\.json|robots\\.txt|sw\\.js).*)",
-      "destination": "/"
-    }
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/" }
   ],
   "headers": [
     {
