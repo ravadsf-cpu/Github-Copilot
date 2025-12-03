@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clear Cleary Cache</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 100px auto;
+      padding: 20px;
+      text-align: center;
+      background: #0a0a0a;
+      color: #fff;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      background: #1a1a1a;
+    }
+    .success { color: #4ade80; }
+    .info { color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <h1>Cleary Cache Manager</h1>
+  <p>Clear cached articles to force fresh fetch from backend</p>
+  
+  <button onclick="clearCache()">Clear Article Cache</button>
+  <button onclick="checkCache()">Check Cache Status</button>
+  <button onclick="testBackend()">Test Backend</button>
+  
+  <div class="status" id="status"></div>
+
+  <script>
+    function showStatus(msg, type = 'info') {
+      const el = document.getElementById('status');
+      el.innerHTML = `<div class="${type}">${msg}</div>`;
+    }
+
+    function clearCache() {
+      localStorage.removeItem('fastArticles');
+      localStorage.removeItem('fastArticles_ts');
+      showStatus('✅ Cache cleared! Reload Cleary to fetch fresh articles.', 'success');
+    }
+
+    function checkCache() {
+      const cached = localStorage.getItem('fastArticles');
+      const ts = localStorage.getItem('fastArticles_ts');
+      if (cached) {
+        const articles = JSON.parse(cached);
+        const age = ts ? Math.floor((Date.now() - parseInt(ts)) / 1000 / 60) : '?';
+        showStatus(`📦 Cache: ${articles.length} articles (${age} minutes old)`, 'info');
+      } else {
+        showStatus('❌ No cache found', 'info');
+      }
+    }
+
+    async function testBackend() {
+      showStatus('🔄 Testing backend...', 'info');
+      try {
+        const res = await fetch('http://localhost:5001/api/news?category=breaking');
+        const data = await res.json();
+        showStatus(`✅ Backend working! ${data.articles?.length || 0} articles available`, 'success');
+      } catch (e) {
+        showStatus(`❌ Backend error: ${e.message}`, 'info');
+      }
+    }
+
+    // Auto-check on load
+    checkCache();
+  </script>
+</body>
+</html>

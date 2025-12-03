@@ -1,0 +1,20 @@
+{
+  "name": "cleary-anti-gravity-version",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd cleary && npm install && npm run build",
+    "dev": "cd cleary && PORT=3001 npm start",
+    "server": "cd cleary && PORT=5002 npm run server",
+    "restart": "pkill -f 'server/index.js' || true; cd cleary && PORT=5002 npm run server",
+    "vercel-build": "cd cleary && npm install --no-audit --no-fund && npm run build"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "og": "^0.0.2",
+    "ogl": "^1.0.11",
+    "pg": "^8.16.3",
+    "googleapis": "^131.0.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

@@ -1,0 +1,69 @@
+.card-swap-container {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  transform: translate(0, 0);
+  transform-origin: bottom right;
+  perspective: 900px;
+  overflow: visible;
+}
+
+/* Inline variant for dedicated sections */
+.card-swap-inline {
+  position: relative;
+  bottom: auto;
+  right: auto;
+  left: auto;
+  transform: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 12px;
+  /* Use CSS variables so pages can set theme-aware colors */
+  border: 1px solid var(--card-border, rgba(255,255,255,0.1));
+  background: var(--card-bg, rgba(0,0,0,0.85));
+  color: var(--card-fg, inherit);
+
+  transform-style: preserve-3d;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+@media (max-width: 1024px) {
+  .card-swap-container {
+    transform: scale(0.85);
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+  .card-swap-inline {
+    transform: scale(0.95);
+  }
+}
+
+@media (max-width: 768px) {
+  .card-swap-container {
+    transform: scale(0.7);
+    bottom: 1rem;
+    right: 1rem;
+  }
+  .card-swap-inline {
+    transform: scale(0.85);
+  }
+}
+
+@media (max-width: 480px) {
+  .card-swap-container {
+    transform: scale(0.55);
+    bottom: 0.75rem;
+    right: 0.75rem;
+  }
+  .card-swap-inline {
+    transform: scale(0.75);
+  }
+}

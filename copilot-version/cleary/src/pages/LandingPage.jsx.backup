@@ -1,0 +1,937 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { Zap, Brain, TrendingUp, ArrowRight, Shield, Globe, BarChart3, Sparkles, Filter, Clock, Target, Users, Play, Award, Newspaper, MessageSquare } from 'lucide-react';
+import AnimatedGlobeHero from '../components/AnimatedGlobeHero';
+import StreamingNewsFeed from '../components/StreamingNewsFeed';
+import BiasDetectionDashboard from '../components/BiasDetectionDashboard';
+import AnimatedBackground from '../components/AnimatedBackground';
+import RippleButton from '../components/RippleButton';
+
+const LandingPage = () => {
+  const navigate = useNavigate();
+  const containerRef = useRef(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end start']
+  });
+
+  // Smooth spring physics for scroll-based animations
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
+  // Parallax effects for hero section
+  const heroY = useTransform(smoothProgress, [0, 1], ['0%', '50%']);
+  const heroOpacity = useTransform(smoothProgress, [0, 0.3], [1, 0]);
+  const heroScale = useTransform(smoothProgress, [0, 0.3], [1, 0.95]);
+
+  // Mouse parallax effect
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+      setMousePosition({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Custom easing for organic motion
+  const organicEase = [0.17, 0.67, 0.83, 0.67];
+
+  const features = [
+    {
+      icon: Zap,
+      title: 'Real-Time Intelligence',
+      description: 'Stay ahead with instant news updates from thousands of trusted sources, powered by advanced AI that learns your preferences and delivers what matters most to you.',
+      color: 'from-yellow-500 to-orange-500'
+    },
+    {
+      icon: Brain,
+      title: 'AI-Powered Analysis',
+      description: 'Get instant article summaries, political bias detection, and sentiment analysis. Our AI breaks down complex stories into clear, digestible insights you can trust.',
+      color: 'from-purple-500 to-pink-500'
+    },
+    {
+      icon: Shield,
+      title: 'Bias Detection',
+      description: 'Understand the political leaning of every article with our advanced bias detection system. Make informed decisions with full transparency about source perspectives.',
+      color: 'from-blue-500 to-cyan-500'
+    },
+    {
+      icon: Globe,
+      title: 'Global Coverage',
+      description: 'Access news from across the world in one unified platform. Track international stories, compare regional perspectives, and understand global events comprehensively.',
+      color: 'from-green-500 to-emerald-500'
+    },
+    {
+      icon: Filter,
+      title: 'Smart Filtering',
+      description: 'Create custom news feeds tailored to your interests. Filter by topic, source credibility, political lean, and more to build your perfect information diet.',
+      color: 'from-pink-500 to-rose-500'
+    },
+    {
+      icon: Sparkles,
+      title: 'Personalized Experience',
+      description: 'Our AI learns from your reading habits to deliver increasingly relevant content. Get a news experience that evolves with you and respects your time.',
+      color: 'from-indigo-500 to-purple-500'
+    }
+  ];
+
+  const stats = [
+    { number: '10K+', label: 'News Sources', icon: Globe },
+    { number: '1M+', label: 'Articles Daily', icon: BarChart3 },
+    { number: '95%', label: 'Accuracy Rate', icon: Target },
+    { number: '24/7', label: 'Real-Time Updates', icon: Clock }
+  ];
+
+  const valueProps = [
+    { phase: 'Read', icon: Newspaper, description: 'Curated news from trusted sources' },
+    { phase: 'Understand', icon: Brain, description: 'AI-powered insights and analysis' },
+    { phase: 'Decide', icon: Target, description: 'Make informed decisions faster' }
+  ];
+
+  return (
+    <div className="relative bg-black">
+      {/* Sticky Header with Blur Background */}
+      <motion.header
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-black/30 border-b border-white/10"
+      >
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <motion.div
+            className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
+            Cleary
+          </motion.div>
+          
+          <div className="flex items-center gap-4">
+            <motion.button
+              onClick={() => navigate('/login')}
+              className="px-6 py-2 text-white font-medium hover:text-purple-300 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Log In
+            </motion.button>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <RippleButton
+                onClick={() => navigate('/signup')}
+                className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold shadow-lg shadow-purple-500/30"
+              >
+                Sign Up
+              </RippleButton>
+            </motion.div>
+          </div>
+        </div>
+      </motion.header>
+
+      <AnimatedBackground mood="neutral">
+        <div ref={containerRef} className="relative">
+          {/* Cinematic Hero Section with Parallax */}
+          <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+            {/* Animated gradient background layers */}
+            <motion.div
+              className="absolute inset-0 opacity-30"
+              style={{
+                background: 'radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.3), transparent 70%)',
+                x: useTransform(smoothProgress, [0, 1], ['0%', '10%']),
+                y: useTransform(smoothProgress, [0, 1], ['0%', '15%']),
+              }}
+            />
+            
+            <motion.div
+              className="absolute inset-0 opacity-20"
+              style={{
+                background: 'radial-gradient(circle at 30% 70%, rgba(236, 72, 153, 0.3), transparent 60%)',
+                x: useTransform(smoothProgress, [0, 1], ['0%', '-5%']),
+                y: useTransform(smoothProgress, [0, 1], ['0%', '20%']),
+              }}
+            />
+
+            {/* Floating particles effect */}
+            <div className="absolute inset-0 overflow-hidden">
+              {[...Array(20)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-1 h-1 bg-purple-400 rounded-full"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                  }}
+                  animate={{
+                    y: [0, -30, 0],
+                    opacity: [0.2, 0.8, 0.2],
+                    scale: [1, 1.5, 1],
+                  }}
+                  transition={{
+                    duration: 3 + Math.random() * 2,
+                    repeat: Infinity,
+                    delay: Math.random() * 2,
+                    ease: organicEase,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Hero Content with Mouse Parallax */}
+            <motion.div
+              className="relative z-10 text-center px-6 max-w-6xl"
+              style={{
+                opacity: heroOpacity,
+                scale: heroScale,
+                y: heroY,
+                x: mousePosition.x * 10,
+              }}
+            >
+              {/* Typewriter effect title */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="mb-6"
+              >
+                <motion.h1
+                  className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-4 leading-tight"
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1, ease: organicEase }}
+                >
+                  <span className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
+                    Read.
+                  </span>
+                  {' '}
+                  <span className="inline-block bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient" style={{ animationDelay: '0.2s' }}>
+                    Understand.
+                  </span>
+                  {' '}
+                  <span className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient" style={{ animationDelay: '0.4s' }}>
+                    Decide.
+                  </span>
+                </motion.h1>
+              </motion.div>
+
+              <motion.p
+                className="text-2xl md:text-4xl text-gray-300 mb-6 font-light"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.3, ease: organicEase }}
+              >
+                Your Intelligent News Command Center
+              </motion.p>
+
+              <motion.p
+                className="text-lg md:text-xl text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.5, ease: organicEase }}
+              >
+                Cut through the noise with AI-powered news aggregation, real-time bias detection, 
+                and personalized feeds that adapt to your interests.
+              </motion.p>
+
+              {/* CTA Buttons with Magnetic Effect */}
+              <motion.div
+                className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.7, ease: organicEase }}
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(147, 51, 234, 0.6)' }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                >
+                  <RippleButton
+                    onClick={() => navigate('/signup')}
+                    className="group px-12 py-5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xl shadow-2xl shadow-purple-500/50 relative overflow-hidden"
+                  >
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    />
+                    <span className="relative z-10 flex items-center gap-3">
+                      Start Reading Smarter
+                      <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
+                    </span>
+                  </RippleButton>
+                </motion.div>
+
+                <motion.button
+                  onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="px-12 py-5 rounded-xl border-2 border-white/20 text-white font-bold text-xl hover:bg-white/5 backdrop-blur-sm transition-all duration-300"
+                  whileHover={{ scale: 1.05, borderColor: 'rgba(255, 255, 255, 0.4)' }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                >
+                  See How It Works
+                </motion.button>
+              </motion.div>
+
+              {/* Animated Stats */}
+              <motion.div
+                className="grid grid-cols-2 md:grid-cols-4 gap-8"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.9, ease: organicEase }}
+              >
+                {stats.map((stat, index) => (
+                  <motion.div
+                    key={index}
+                    className="relative group"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 1 + index * 0.1, ease: organicEase }}
+                    whileHover={{ scale: 1.1, y: -5 }}
+                  >
+                    <div className="text-center backdrop-blur-sm bg-white/5 rounded-xl p-6 border border-white/10 group-hover:border-purple-500/50 transition-all duration-300">
+                      <motion.div
+                        className="flex justify-center mb-3"
+                        animate={{ rotate: [0, 5, -5, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                      >
+                        <stat.icon className="w-8 h-8 text-purple-400" />
+                      </motion.div>
+                      <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+                        {stat.number}
+                      </div>
+                      <div className="text-sm text-gray-400">{stat.label}</div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+
+            {/* Scroll Indicator */}
+            <motion.div
+              className="absolute bottom-10 left-1/2 -translate-x-1/2"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 1.5 }}
+            >
+              <motion.div
+                animate={{ y: [0, 12, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: organicEase }}
+                className="w-8 h-12 border-2 border-white/30 rounded-full flex items-start justify-center p-2 backdrop-blur-sm"
+              >
+                <motion.div
+                  animate={{ opacity: [0, 1, 0], y: [0, 20, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: organicEase }}
+                  className="w-1.5 h-3 bg-gradient-to-b from-purple-400 to-pink-400 rounded-full"
+                />
+              </motion.div>
+            </motion.div>
+          </section>
+
+          {/* Pinned Value Proposition Section - Read. Understand. Decide. */}
+          <section className="relative py-12 md:py-16 flex items-center justify-center">
+            <div className="container mx-auto px-6 max-w-7xl">
+              <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+                {valueProps.map((prop, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 100 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ duration: 0.8, delay: index * 0.2, ease: organicEase }}
+                    className="relative group"
+                  >
+                    {/* Glow effect on hover */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      animate={{
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        delay: index * 0.5,
+                      }}
+                    />
+                    
+                    <motion.div
+                      className="relative backdrop-blur-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-2xl md:rounded-3xl p-6 md:p-8 h-full"
+                      whileHover={{ 
+                        scale: 1.05, 
+                        borderColor: 'rgba(147, 51, 234, 0.5)',
+                        y: -10
+                      }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      {/* Icon with pulse animation */}
+                      <motion.div
+                        className="mb-4 md:mb-6 inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-xl md:rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 shadow-2xl shadow-purple-500/50"
+                        whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <prop.icon className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                      </motion.div>
+
+                      <motion.h3
+                        className="text-3xl md:text-4xl font-black mb-3 md:mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: index * 0.2 + 0.3 }}
+                      >
+                        {prop.phase}
+                      </motion.h3>
+
+                      <motion.p
+                        className="text-base md:text-lg text-gray-300 leading-relaxed"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: index * 0.2 + 0.5 }}
+                      >
+                        {prop.description}
+                      </motion.p>
+
+                      {/* Decorative corner accent */}
+                      <motion.div
+                        className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-purple-500/20 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      />
+                    </motion.div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+        {/* 3D Animation Section - Scroll to see */}
+        <motion.section id="demo-section" className="relative min-h-screen snap-start flex flex-col items-center justify-center px-6 py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
+              See Cleary in Action
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Experience how our AI-powered platform delivers personalized, bias-detected news in real-time
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative z-10 max-w-5xl w-full"
+          >
+
+            {/* 3D Animated Computer Screen Mockup */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, rotateX: 20 }}
+              animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+              transition={{ duration: 0.8, delay: 1.1 }}
+              className="mb-16 mx-auto max-w-5xl"
+              style={{ perspective: '2000px' }}
+            >
+              <motion.div 
+                className="relative"
+                animate={{ 
+                  rotateX: [0, -2, 0],
+                  rotateY: [0, 2, 0],
+                }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                style={{ 
+                  transformStyle: 'preserve-3d',
+                  transform: 'rotateX(8deg) rotateY(-5deg)',
+                }}
+              >
+                {/* Minimalist Browser Chrome */}
+                <div className="bg-gradient-to-b from-gray-900/90 to-gray-900/70 backdrop-blur-xl rounded-t-2xl p-4 border-t border-x border-white/10 shadow-2xl"
+                  style={{ transform: 'translateZ(20px)' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-500 transition-colors"></div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500/80 hover:bg-yellow-500 transition-colors"></div>
+                      <div className="w-3 h-3 rounded-full bg-green-500/80 hover:bg-green-500 transition-colors"></div>
+                    </div>
+                    <div className="flex-1 ml-6 bg-black/40 rounded-lg px-4 py-2 text-xs text-gray-400 font-mono border border-white/5">
+                      <span className="text-purple-400">https://</span>cleary.news<span className="text-gray-600">/dashboard</span>
+                    </div>
+                    <div className="w-20 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded text-xs font-medium flex items-center justify-center text-white">
+                      Live
+                    </div>
+                  </div>
+                </div>
+
+                {/* High-Tech Screen Content */}
+                <div className="bg-gradient-to-b from-gray-950 via-black to-gray-950 border-x border-b border-white/10 rounded-b-2xl p-8 h-[500px] overflow-hidden relative shadow-2xl"
+                  style={{ transform: 'translateZ(10px)' }}
+                >
+                  {/* Ambient background grid */}
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(147,51,234,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(147,51,234,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+                  
+                  {/* Smooth scrolling news feed */}
+                  <motion.div
+                    animate={{ y: [0, -1800] }}
+                    transition={{ 
+                      duration: 60, 
+                      repeat: Infinity, 
+                      ease: "linear"
+                    }}
+                    className="space-y-3 relative z-10"
+                  >
+                    {[
+                      { 
+                        title: "Federal Reserve Announces Key Interest Rate Decision", 
+                        source: "Reuters",
+                        category: "Finance", 
+                        bias: "CENTER",
+                        time: "2m ago",
+                        score: 94,
+                        trend: "up"
+                      },
+                      { 
+                        title: "Breakthrough in Quantum Computing Achieves New Milestone", 
+                        source: "Nature",
+                        category: "Technology", 
+                        bias: "CENTER",
+                        time: "5m ago",
+                        score: 91,
+                        trend: "up"
+                      },
+                      { 
+                        title: "Supreme Court to Hear Major Environmental Protection Case", 
+                        source: "AP News",
+                        category: "Politics", 
+                        bias: "CENTER",
+                        time: "12m ago",
+                        score: 88,
+                        trend: "stable"
+                      },
+                      { 
+                        title: "Global Climate Summit Reaches Historic Emissions Agreement", 
+                        source: "The Guardian",
+                        category: "Environment", 
+                        bias: "LEFT-CENTER",
+                        time: "18m ago",
+                        score: 86,
+                        trend: "up"
+                      },
+                      { 
+                        title: "Major Tech Companies Report Q4 Earnings Above Expectations", 
+                        source: "Bloomberg",
+                        category: "Business", 
+                        bias: "CENTER",
+                        time: "25m ago",
+                        score: 83,
+                        trend: "down"
+                      },
+                      { 
+                        title: "Medical Research Team Publishes Groundbreaking Cancer Study", 
+                        source: "The Lancet",
+                        category: "Science", 
+                        bias: "CENTER",
+                        time: "34m ago",
+                        score: 90,
+                        trend: "up"
+                      },
+                      { 
+                        title: "International Trade Agreement Reshapes Pacific Economic Zone", 
+                        source: "Financial Times",
+                        category: "Economics", 
+                        bias: "CENTER",
+                        time: "41m ago",
+                        score: 81,
+                        trend: "stable"
+                      },
+                      { 
+                        title: "Artificial Intelligence Regulation Framework Proposed by EU", 
+                        source: "Politico",
+                        category: "Policy", 
+                        bias: "CENTER",
+                        time: "48m ago",
+                        score: 87,
+                        trend: "up"
+                      },
+                      { 
+                        title: "Space Agency Confirms Successful Deep Space Probe Mission", 
+                        source: "Space.com",
+                        category: "Space", 
+                        bias: "CENTER",
+                        time: "55m ago",
+                        score: 79,
+                        trend: "stable"
+                      },
+                      { 
+                        title: "Cybersecurity Experts Warn of Emerging Digital Threats", 
+                        source: "Wired",
+                        category: "Security", 
+                        bias: "CENTER",
+                        time: "1h ago",
+                        score: 85,
+                        trend: "up"
+                      },
+                      { 
+                        title: "Housing Market Shows Unexpected Resilience in Major Cities", 
+                        source: "WSJ",
+                        category: "Real Estate", 
+                        bias: "CENTER-RIGHT",
+                        time: "1h ago",
+                        score: 77,
+                        trend: "down"
+                      },
+                      { 
+                        title: "Educational Reform Initiative Gains Bipartisan Support", 
+                        source: "NPR",
+                        category: "Education", 
+                        bias: "LEFT-CENTER",
+                        time: "1h ago",
+                        score: 82,
+                        trend: "stable"
+                      },
+                    ].map((article, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="group bg-gradient-to-br from-gray-900/60 to-gray-900/40 backdrop-blur-md border border-white/5 rounded-xl p-5 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 space-y-3">
+                            {/* Header row with metadata */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono uppercase tracking-wider">
+                                {article.category}
+                              </span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono uppercase tracking-wider ${
+                                article.bias.includes('LEFT') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                article.bias.includes('RIGHT') ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
+                                'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                              }`}>
+                                {article.bias}
+                              </span>
+                              <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-mono">
+                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                  article.trend === 'up' ? 'bg-green-500' :
+                                  article.trend === 'down' ? 'bg-red-500' :
+                                  'bg-yellow-500'
+                                } animate-pulse`}></div>
+                                <span>{article.time}</span>
+                              </div>
+                            </div>
+                            
+                            {/* Article title */}
+                            <h3 className="text-white text-base font-semibold leading-tight group-hover:text-purple-300 transition-colors">
+                              {article.title}
+                            </h3>
+                            
+                            {/* Source and score */}
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-400 font-medium">
+                                {article.source}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <div className="h-1 w-16 bg-gray-800 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"
+                                    style={{ width: `${article.score}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-xs text-purple-400 font-mono font-bold">
+                                  {article.score}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Thumbnail placeholder with gradient */}
+                          <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-white/10">
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-pink-600/20 to-purple-800/30"></div>
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent)]"></div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+
+                  {/* Multi-layer fade overlays */}
+                  <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-gray-950 via-gray-950/80 to-transparent pointer-events-none z-20"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-gray-950 via-gray-950/90 to-transparent pointer-events-none z-20"></div>
+                </div>
+
+                {/* Enhanced glow effects */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-purple-600/20 blur-3xl -z-10 animate-pulse"></div>
+                <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-purple-600/5 to-pink-600/5 blur-2xl -z-20"></div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </motion.section>
+
+        {/* Features Section with Staggered Animations */}
+        <section className="relative py-32 px-6 min-h-screen flex items-center overflow-hidden">
+          {/* Animated background gradients */}
+          <motion.div
+            className="absolute inset-0 opacity-20"
+            animate={{
+              backgroundPosition: ['0% 0%', '100% 100%'],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              repeatType: 'reverse',
+            }}
+            style={{
+              background: 'linear-gradient(45deg, rgba(147, 51, 234, 0.2), rgba(236, 72, 153, 0.2), rgba(147, 51, 234, 0.2))',
+              backgroundSize: '200% 200%',
+            }}
+          />
+
+          <div className="container mx-auto max-w-7xl relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.8, ease: organicEase }}
+              className="text-center mb-24"
+            >
+              <motion.h2
+                className="text-6xl md:text-7xl font-black text-white mb-8"
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: organicEase }}
+              >
+                Everything You Need
+              </motion.h2>
+              <motion.p
+                className="text-2xl text-gray-400 max-w-3xl mx-auto"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.2, ease: organicEase }}
+              >
+                Powerful features designed to transform how you consume and understand news
+              </motion.p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 100, rotateX: 45 }}
+                  whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ 
+                    duration: 0.8, 
+                    delay: index * 0.1, 
+                    ease: organicEase 
+                  }}
+                  whileHover={{ y: -15, scale: 1.03 }}
+                  className="relative group perspective-1000"
+                >
+                  {/* Glow effect */}
+                  <motion.div
+                    className={`absolute inset-0 bg-gradient-to-br ${feature.color} rounded-3xl blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`}
+                  />
+                  
+                  <motion.div
+                    className="relative backdrop-blur-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-3xl p-10 h-full group-hover:border-purple-500/50 transition-all duration-500"
+                    whileHover={{ boxShadow: '0 20px 60px rgba(147, 51, 234, 0.3)' }}
+                  >
+                    {/* Icon with rotation on hover */}
+                    <motion.div
+                      className={`mb-8 inline-flex w-20 h-20 rounded-2xl bg-gradient-to-br ${feature.color} items-center justify-center shadow-lg`}
+                      whileHover={{ rotate: 360, scale: 1.1 }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      <feature.icon className="w-10 h-10 text-white" />
+                    </motion.div>
+                    
+                    <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-pink-400 group-hover:bg-clip-text transition-all duration-300">
+                      {feature.title}
+                    </h3>
+                    
+                    <p className="text-gray-400 leading-relaxed text-base">
+                      {feature.description}
+                    </p>
+
+                    {/* Corner accent */}
+                    <motion.div
+                      className={`absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl ${feature.color} opacity-0 group-hover:opacity-20 rounded-tl-full transition-opacity duration-500`}
+                    />
+                  </motion.div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA Section - Cinematic */}
+        <section className="relative py-40 px-6 overflow-hidden">
+          {/* Animated orb backgrounds */}
+          <motion.div
+            className="absolute top-1/2 left-1/4 w-96 h-96 bg-purple-600/30 rounded-full blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: organicEase,
+            }}
+          />
+          <motion.div
+            className="absolute top-1/3 right-1/4 w-96 h-96 bg-pink-600/30 rounded-full blur-3xl"
+            animate={{
+              scale: [1.2, 1, 1.2],
+              opacity: [0.5, 0.3, 0.5],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: organicEase,
+              delay: 1,
+            }}
+          />
+
+          <div className="container mx-auto max-w-5xl relative z-10">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, ease: organicEase }}
+              className="relative backdrop-blur-2xl bg-gradient-to-br from-purple-900/40 via-black/40 to-pink-900/40 border border-purple-500/30 rounded-3xl p-16 md:p-20 text-center overflow-hidden"
+            >
+              {/* Animated border glow */}
+              <motion.div
+                className="absolute inset-0 rounded-3xl"
+                style={{
+                  background: 'linear-gradient(45deg, rgba(147, 51, 234, 0.5), rgba(236, 72, 153, 0.5), rgba(147, 51, 234, 0.5))',
+                  backgroundSize: '200% 200%',
+                }}
+                animate={{
+                  backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+              />
+
+              {/* Inner content */}
+              <div className="relative z-10 backdrop-blur-sm bg-black/50 rounded-2xl p-12">
+                <motion.h2
+                  className="text-5xl md:text-7xl font-black text-white mb-8"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                >
+                  Ready to Transform Your
+                  <span className="block mt-2 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                    News Experience?
+                  </span>
+                </motion.h2>
+
+                <motion.p
+                  className="text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.4 }}
+                >
+                  Join thousands of readers who stay informed without the overwhelm. 
+                  Start your journey to smarter news consumption today.
+                </motion.p>
+
+                <motion.div
+                  className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.6 }}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <RippleButton
+                      onClick={() => navigate('/signup')}
+                      className="group px-16 py-6 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-2xl shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transition-shadow duration-300"
+                    >
+                      <span className="flex items-center gap-4">
+                        Get Started Free
+                        <motion.div
+                          animate={{ x: [0, 5, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        >
+                          <ArrowRight className="w-8 h-8" />
+                        </motion.div>
+                      </span>
+                    </RippleButton>
+                  </motion.div>
+
+                  <motion.button
+                    onClick={() => navigate('/login')}
+                    className="px-16 py-6 rounded-2xl border-2 border-white/30 text-white font-black text-2xl hover:bg-white/10 backdrop-blur-sm transition-all duration-300"
+                    whileHover={{ scale: 1.1, borderColor: 'rgba(255, 255, 255, 0.6)' }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Sign In
+                  </motion.button>
+                </motion.div>
+
+                <motion.p
+                  className="text-sm text-gray-500"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.8 }}
+                >
+                  No credit card required • Free forever plan available • Cancel anytime
+                </motion.p>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </div>
+    </AnimatedBackground>
+    </div>
+  );
+};
+
+// Custom CSS for gradient animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+  }
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+`;
+document.head.appendChild(style);
+
+export default LandingPage;

@@ -27,7 +27,7 @@ const FeedPage = () => {
   // Scroll-based animations
   const { scrollYProgress } = useScroll();
   useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
-  
+
   // Spring physics
   const springConfig = { stiffness: 300, damping: 30 };
   const organicEase = [0.17, 0.67, 0.83, 0.67];
@@ -98,10 +98,10 @@ const FeedPage = () => {
 
         if (data.articles && data.articles.length) {
           setArticles(data.articles);
-          try { 
-            localStorage.setItem('fastArticles', JSON.stringify(data.articles.slice(0, 40))); 
+          try {
+            localStorage.setItem('fastArticles', JSON.stringify(data.articles.slice(0, 40)));
             localStorage.setItem('fastArticles_ts', Date.now().toString());
-          } catch {}
+          } catch { }
         }
       } catch (e) {
         console.warn('fetchNews background error', e);
@@ -119,17 +119,37 @@ const FeedPage = () => {
     loadLean();
   }, []);
 
-  const filteredArticles = articles.filter(article =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (article.summary || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredArticles = articles.filter(article => {
+    const query = searchQuery.toLowerCase();
+    const title = (article.title || '').toLowerCase();
+    const summary = (article.summary || '').toLowerCase();
 
-  // Smart article sorting based on user's political preference
+    // 1. Search Filter
+    const matchesSearch = title.includes(query) || summary.includes(query);
+    if (!matchesSearch) return false;
+
+    // 2. Clickbait/Lifestyle Filter (User Request: "real news", no drinks/beaches)
+    const clickbaitKeywords = [
+      'best drinks', 'top 10 beaches', 'vacation spots', 'best of',
+      'lifestyle', 'fashion trends', 'celebrity gossip', 'horoscope'
+    ];
+    const isClickbait = clickbaitKeywords.some(kw => title.includes(kw) || summary.includes(kw));
+    if (isClickbait) return false;
+
+    return true;
+  });
+
+  // Smart article sorting based on user's political preference AND recency
   const sortedByPreference = React.useMemo(() => {
-    if (!userPreferences?.politicalBalance) return filteredArticles;
-    
+    // Default to newest first if no preference, or even with preference, recency matters
+    const baseList = [...filteredArticles].sort((a, b) => {
+      return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
+    });
+
+    if (!userPreferences?.politicalBalance) return baseList;
+
     const preference = userPreferences.politicalBalance;
-    
+
     // Map political balance preference to lean scoring
     const preferenceMap = {
       'left': ['left', 'lean-left', 'center'],
@@ -138,25 +158,29 @@ const FeedPage = () => {
       'lean-right': ['lean-right', 'right', 'center', 'lean-left'],
       'right': ['right', 'lean-right', 'center']
     };
-    
+
     const order = preferenceMap[preference] || preferenceMap['balanced'];
-    
-    return [...filteredArticles].sort((a, b) => {
-      // Get lean rankings
+
+    return baseList.sort((a, b) => {
+      // Primary Sort: Recency (Bucketed by 4 hours to allow personalization within timeframes)
+      const timeA = new Date(a.publishedAt || 0).getTime();
+      const timeB = new Date(b.publishedAt || 0).getTime();
+      const hoursDiff = (timeB - timeA) / (1000 * 60 * 60);
+
+      if (Math.abs(hoursDiff) > 4) {
+        return timeB - timeA; // Strict chronological if far apart
+      }
+
+      // Secondary Sort: Personalization (Lean)
       const aLean = a.lean || 'center';
       const bLean = b.lean || 'center';
       const aRank = order.indexOf(aLean);
       const bRank = order.indexOf(bLean);
-      
-      // If leans are equally preferred, sort by confidence
-      if (aRank === bRank) {
-        const aConf = a.leanConfidence || 0.5;
-        const bConf = b.leanConfidence || 0.5;
-        return bConf - aConf;
+
+      if (aRank !== -1 && bRank !== -1) {
+        return aRank - bRank;
       }
-      
-      // Sort by preference order (lower rank = more preferred)
-      return aRank - bRank;
+      return 0;
     });
   }, [filteredArticles, userPreferences?.politicalBalance]);
 
@@ -166,23 +190,22 @@ const FeedPage = () => {
   // Compute "Happening Now" headlines and trending topics from current articles
   const happeningNow = React.useMemo(() => {
     const impactWords = ['breaking', 'urgent', 'exclusive', 'bombshell', 'crisis', 'attack', 'indicted', 'charged', 'election', 'vote', 'results', 'victory', 'defeat'];
-    const premium = ['cnn.com','nytimes.com','washingtonpost.com','reuters.com','apnews.com','bbc.com'];
+    const premium = ['cnn.com', 'nytimes.com', 'washingtonpost.com', 'reuters.com', 'apnews.com', 'bbc.com'];
     const scored = (displayArticles || []).map((a) => {
       let score = 0;
       const title = (a.title || '').toLowerCase();
       const desc = (a.summary || a.description || '').toLowerCase();
       const hasVideo = !!(a.media && a.media.videos && a.media.videos.length > 0);
-      // recency
+      // recency - BOOSTED for "Newest" requirement
       try {
         const hours = (Date.now() - new Date(a.publishedAt || 0).getTime()) / 36e5;
         if (!isNaN(hours)) {
-          if (hours <= 2) score += 15;
-          else if (hours <= 6) score += 12;
-          else if (hours <= 12) score += 9;
-          else if (hours <= 24) score += 6;
-          else if (hours <= 48) score += 3;
+          if (hours <= 1) score += 50; // Massive boost for very fresh news
+          else if (hours <= 4) score += 30;
+          else if (hours <= 12) score += 15;
+          else if (hours <= 24) score += 5;
         }
-      } catch {}
+      } catch { }
       // impact words
       impactWords.forEach(w => {
         if (title.includes(w)) score += 8;
@@ -191,15 +214,15 @@ const FeedPage = () => {
       // premium domain
       try {
         const u = new URL(a.url);
-        const host = u.hostname.replace(/^www\./,'');
+        const host = u.hostname.replace(/^www\./, '');
         if (premium.includes(host)) score += 10;
-      } catch {}
+      } catch { }
       // video boost: prefer articles with videos
       if (hasVideo) score += 12;
       return { ...a, _score: score };
     })
-    .sort((x, y) => y._score - x._score)
-    .slice(0, 6);
+      .sort((x, y) => y._score - x._score)
+      .slice(0, 6);
     return scored;
   }, [displayArticles]);
 
@@ -209,11 +232,11 @@ const FeedPage = () => {
       const text = `${a.title || ''} ${a.summary || ''}`.toLowerCase();
       const words = text.match(/[a-zA-Z]{4,}/g) || [];
       words.forEach(w => {
-        if (['breaking','latest','today','after','with','from','that','this','will','have','about','news'].includes(w)) return;
+        if (['breaking', 'latest', 'today', 'after', 'with', 'from', 'that', 'this', 'will', 'have', 'about', 'news'].includes(w)) return;
         counts.set(w, (counts.get(w) || 0) + 1);
       });
     });
-    const arr = Array.from(counts.entries()).sort((a,b) => b[1]-a[1]).slice(0, 10).map(([w]) => w);
+    const arr = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([w]) => w);
     return arr;
   }, [displayArticles]);
 
@@ -260,7 +283,7 @@ const FeedPage = () => {
         />
       </div>
       <Header />
-      
+
       {/* Floating particles effect (neutralized to gray) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         {[...Array(15)].map((_, i) => (
@@ -288,7 +311,7 @@ const FeedPage = () => {
       </div>
 
       {/* Removed colored orbs for neutral theme */}
-      
+
       <main className="relative container mx-auto px-6 pt-24 pb-12 z-10">
         {/* AI Section with parallax */}
         <motion.div
@@ -305,8 +328,8 @@ const FeedPage = () => {
         {/* AI Results - render in their own section above the main feed */}
         {aiArticles && aiArticles.articles?.length > 0 && (
           <div className="mb-10">
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }} 
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-4 flex items-center justify-between"
             >
@@ -346,7 +369,7 @@ const FeedPage = () => {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-2">
           <h2 className="text-xl">Recommended for you</h2>
         </motion.div>
-        
+
         {/* Mood Selector */}
         <MoodSelector />
 
@@ -392,9 +415,9 @@ const FeedPage = () => {
 
         {/* Trending topics with spring animations */}
         {(!aiArticles && trendingTopics.length > 0) && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
             <div className="flex flex-wrap gap-2">
@@ -451,7 +474,7 @@ const FeedPage = () => {
             className="text-center py-20"
           >
             <p className="text-gray-400 text-lg">
-              {aiArticles 
+              {aiArticles
                 ? "No articles found from AI search. Try a different query."
                 : "No articles found. Try a different category or search term."
               }
@@ -459,9 +482,9 @@ const FeedPage = () => {
           </motion.div>
         )}
       </main>
-      
+
       {/* AI ChatBot */}
-  <ChatBot politicalLean={lean} interests={[currentMood]} preference={userPreferences?.politicalBalance || 'balanced'} />
+      <ChatBot politicalLean={lean} interests={[currentMood]} preference={userPreferences?.politicalBalance || 'balanced'} />
     </AnimatedBackground>
   );
 };

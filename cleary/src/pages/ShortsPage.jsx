@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Film, RefreshCw, Search, TrendingUp, Zap } from '../components/Icons';
+import { motion } from 'framer-motion';
+import { Film, RefreshCw, Search } from '../components/Icons';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Header from '../components/Header';
 import ShortFeedCard from '../components/ShortFeedCard';
@@ -15,8 +15,8 @@ const ShortsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('newest'); // newest, popular, videoCount, engagement
-  const [visibleCount, setVisibleCount] = useState(12); // initial prefetch list size
+  // const [sortBy, setSortBy] = useState('newest'); // Removed unused state
+  const [visibleCount, setVisibleCount] = useState(3); // Optimized: Load fewer initially for faster TTI
   const [engagementMap, setEngagementMap] = useState({});
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -35,9 +35,20 @@ const ShortsPage = () => {
       }
       if (!response.ok) throw new Error('Failed to fetch shorts');
       const data = await response.json();
-      setShorts(data.articles || []);
+
+      // Filter out Rick Rolls and known troll content
+      const cleanShorts = (data.articles || []).filter(s => {
+        const title = (s.title || '').toLowerCase();
+        const url = (s.url || '').toLowerCase();
+        // Block known Rick Roll IDs and keywords
+        if (url.includes('dqw4w9wgxcq')) return false;
+        if (title.includes('rick roll') || title.includes('never gonna give you up')) return false;
+        return true;
+      });
+
+      setShorts(cleanShorts);
       // Reset lazy load
-      setVisibleCount(1);
+      setVisibleCount(3);
     } catch (err) {
       console.error('Error fetching shorts:', err);
       setError(err.message);
@@ -61,22 +72,9 @@ const ShortsPage = () => {
     );
   });
 
-  // Sort
+  // Sort - Always newest first for now
   const sortedShorts = [...filteredShorts].sort((a, b) => {
-    if (sortBy === 'newest') {
-      return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
-    } else if (sortBy === 'videoCount') {
-      return (b.videoCount || 0) - (a.videoCount || 0);
-    } else if (sortBy === 'engagement') {
-      const ea = engagementMap[a.url] || engagementMap[a.title] || { likes:0, dislikes:0 };
-      const eb = engagementMap[b.url] || engagementMap[b.title] || { likes:0, dislikes:0 };
-      // Score: likes - dislikes; disliked items sink
-      const sa = (ea.likes || 0) - (ea.dislikes || 0);
-      const sb = (eb.likes || 0) - (eb.dislikes || 0);
-      if (sb !== sa) return sb - sa;
-      return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
-    }
-    return 0;
+    return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
   });
 
   // Slice for prefetch; we still keep list length manageable
@@ -136,128 +134,38 @@ const ShortsPage = () => {
 
   return (
     <AnimatedBackground mood="exciting">
-      <Header />
-      
-  <main className="pt-24 pb-12 min-h-screen">
-        {/* Hero Section */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          {/* Title with animated icon */}
-          <div className="flex items-center space-x-4 mb-3">
-            <motion.div
-              animate={{
-                rotate: [0, 10, -10, 0],
-                scale: [1, 1.1, 1.1, 1]
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="relative"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl blur-xl opacity-50" />
-              <div className="relative bg-gradient-to-br from-purple-600 to-pink-600 p-3 rounded-2xl">
-                <Film className="w-8 h-8 text-white" />
+      {/* Header removed from flow, added to overlay */}
+
+      <main className="h-screen w-full bg-black overflow-hidden relative">
+
+
+        {/* Floating Header Controls */}
+        <div className="absolute top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-start pointer-events-none">
+          <div className="pointer-events-auto">
+            <Header />
+          </div>
+
+          <div className="flex flex-col items-end gap-4 pointer-events-auto mt-16">
+            {/* Search Toggle (Simplified) */}
+            <div className="relative group">
+              <div className={`flex items-center bg-black/40 backdrop-blur-md rounded-full border border-white/10 transition-all ${searchQuery ? 'w-64 px-4' : 'w-10 h-10 justify-center hover:w-64 hover:px-4'}`}>
+                <Search className="w-4 h-4 text-white min-w-[16px]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className={`bg-transparent border-none text-white text-sm focus:outline-none ml-2 w-full ${searchQuery ? 'block' : 'hidden group-hover:block'}`}
+                />
               </div>
-            </motion.div>
-            
-            <div>
-              <h1 className="text-5xl font-bold text-white mb-1">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
-                  Shorts
-                </span>
-              </h1>
-              <p className="text-gray-300 text-sm flex items-center space-x-2">
-                <Zap className="w-4 h-4 text-yellow-400" />
-                <span>Quick video news from CNN, BBC, Reuters & more</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Stats Bar */}
-          <div className="flex items-center space-x-4 text-sm">
-            <div className="flex items-center space-x-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
-              <TrendingUp className="w-4 h-4 text-purple-400" />
-              <span className="text-white font-medium">{sortedShorts.length}</span>
-              <span className="text-gray-400">videos available</span>
-            </div>
-            
-            {loading && (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="flex items-center space-x-2 text-purple-400"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span className="text-sm">Loading...</span>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Controls */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6 space-y-4"
-        >
-          {/* Search and Refresh */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search video news..."
-                className="w-full pl-12 pr-4 py-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400/50 focus:ring-2 focus:ring-purple-400/20 transition-all"
-              />
             </div>
 
-            {/* Refresh Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleRefresh}
-              disabled={loading}
-              className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25"
-            >
+            {/* Refresh */}
+            <button onClick={handleRefresh} className="p-2 bg-black/40 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-white/10 transition-colors">
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </motion.button>
+            </button>
           </div>
-
-          {/* Sort Options */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            <span className="text-gray-400 text-sm whitespace-nowrap">Sort by:</span>
-            {[
-              { id: 'newest', label: 'Newest', icon: TrendingUp },
-              { id: 'videoCount', label: 'Most Videos', icon: Film },
-              { id: 'engagement', label: 'Top Rated', icon: Zap }
-            ].map(({ id, label, icon: Icon }) => (
-              <motion.button
-                key={id}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSortBy(id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
-                  sortBy === id
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                    : 'bg-white/5 text-gray-300 hover:bg-white/10'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{label}</span>
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
+        </div>
 
         {/* Error State */}
         {error && (
@@ -296,34 +204,32 @@ const ShortsPage = () => {
 
         {/* Video Grid */}
         {!loading && sortedShorts.length === 0 && !error && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{
+            scale: [1, 1.02, 1]
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: 0,
+            ease: "easeOut"
+          }}
+          className="relative"
+        >
+          <button
+            onClick={() => setSearchQuery('')}
+            className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors"
           >
-            <Film className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">No video shorts found</h3>
-            <p className="text-gray-400 mb-6">
-              {searchQuery ? 'Try adjusting your search' : 'Check back soon for new content'}
-            </p>
-            {searchQuery && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSearchQuery('')}
-                className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors"
-              >
-                Clear Search
-              </motion.button>
-            )}
-          </motion.div>
+            Clear Search
+          </button>
+        </motion.div>
         )}
 
         {/* Vertical Shorts Feed */}
         {!loading && sortedShorts.length > 0 && (
-          <div className="w-full max-w-screen-sm mx-auto snap-y snap-mandatory overflow-y-auto h-[calc(100vh-96px)] scrollbar-none" style={{ scrollBehavior: 'smooth' }}>
+          <div className="w-full h-full snap-y snap-mandatory overflow-y-auto scrollbar-none" style={{ scrollBehavior: 'smooth' }}>
             {visibleShorts.map((short, index) => (
-              <div key={short.url || index} data-short-index={index} className="snap-start">
+              <div key={short.url || index} data-short-index={index} className="snap-start w-full h-full">
                 <ShortFeedCard
                   article={short}
                   index={index}

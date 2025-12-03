@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon-blue: #3B82F6;
+  --neon-red: #EF4444;
+  --neon-gold: #FBBF24;
+  --space-dark: #0A0A0A;
+}
+
+body {
+  background-color: var(--space-dark);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Neon Glow Utilities */
+.glow-blue {
+  box-shadow: 0 0 10px var(--neon-blue), 0 0 20px rgba(59, 130, 246, 0.4);
+}
+.glow-red {
+  box-shadow: 0 0 10px var(--neon-red), 0 0 20px rgba(239, 68, 68, 0.4);
+}
+.glow-gold {
+  box-shadow: 0 0 10px var(--neon-gold), 0 0 20px rgba(251, 191, 36, 0.4);
+}
+
+.text-glow {
+  text-shadow: 0 0 8px currentColor;
+}
+
+/* Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0% { border-color: rgba(255, 255, 255, 0.1); }
+  50% { border-color: rgba(255, 255, 255, 0.5); }
+  100% { border-color: rgba(255, 255, 255, 0.1); }
+}

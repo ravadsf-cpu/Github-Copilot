@@ -1,0 +1,79 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Personalization Profile
+  preferences   String?   // JSON string of preferences
+  history       History[]
+  bookmarks     Bookmark[]
+}
+
+model Article {
+  id            String    @id @default(cuid())
+  title         String
+  snippet       String
+  content       String
+  url           String    @unique
+  imageUrl      String?
+  source        String
+  publishedAt   DateTime
+  leaning       String    // LEFT, RIGHT, CENTER
+  createdAt     DateTime  @default(now())
+  
+  bookmarks     Bookmark[]
+  history       History[]
+}
+
+model Short {
+  id            String    @id @default(cuid())
+  title         String
+  videoUrl      String
+  thumbnailUrl  String?
+  duration      Int       // in seconds
+  source        String
+  createdAt     DateTime  @default(now())
+  
+  // Metrics
+  views         Int       @default(0)
+  likes         Int       @default(0)
+  shares        Int       @default(0)
+}
+
+model History {
+  id            String    @id @default(cuid())
+  userId        String
+  articleId     String?
+  shortId       String?
+  viewedAt      DateTime  @default(now())
+  duration      Int       // seconds spent
+  
+  user          User      @relation(fields: [userId], references: [id])
+  article       Article?  @relation(fields: [articleId], references: [id])
+}
+
+model Bookmark {
+  id            String    @id @default(cuid())
+  userId        String
+  articleId     String
+  createdAt     DateTime  @default(now())
+  
+  user          User      @relation(fields: [userId], references: [id])
+  article       Article   @relation(fields: [articleId], references: [id])
+  
+  @@unique([userId, articleId])
+}

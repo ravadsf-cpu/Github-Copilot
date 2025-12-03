@@ -1,0 +1,579 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Clock, User, ExternalLink, Share2, Bookmark } from '../components/Icons';
+import TiltEmbed from '../components/TiltEmbed';
+import AnimatedBackground from '../components/AnimatedBackground';
+import Header from '../components/Header';
+import { postInteraction } from '../utils/aiService';
+
+const ArticlePage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const initialHydratedRef = useRef(false);
+  const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+
+  useEffect(() => {
+    // 1. Instant hydration from navigation state for near-zero perceived load time
+    if (!initialHydratedRef.current && location.state?.article) {
+      setArticle(location.state.article);
+      setLoading(false); // Display immediately
+      initialHydratedRef.current = true;
+      // Fire-and-forget interaction logging
+      try { postInteraction(location.state.article); } catch {}
+    }
+
+    // 2. Background fetch to refresh/full data with timeout < 2300ms
+    const controller = new AbortController();
+    const timeoutMs = 2300;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const fetchFresh = async () => {
+      try {
+        const res = await fetch(`/api/news`, { signal: controller.signal });
+        if (!res.ok) throw new Error('Network error');
+        const data = await res.json();
+        const found = data.articles.find(a => encodeURIComponent(a.url) === id || a.id === id);
+        if (found) {
+          setArticle(prev => ({ ...found, summary: prev?.summary || found.summary }));
+          // Interaction already posted if hydrated from state; ensure once
+          if (!initialHydratedRef.current) {
+            try { postInteraction(found); } catch {}
+          }
+          // If content is thin, attempt targeted enrichment of this article's HTML/media
+          try {
+            const needsEnrich = !found.contentHtml || (found.contentHtml && found.contentHtml.length < 300);
+            if (found.url && needsEnrich) {
+              const ctrl2 = new AbortController();
+              const id2 = setTimeout(() => ctrl2.abort(), 2000);
+              const enr = await fetch(`/api/article?url=${encodeURIComponent(found.url)}`, { signal: ctrl2.signal });
+              clearTimeout(id2);
+              if (enr.ok) {
+                const j = await enr.json();
+                setArticle(prev => ({
+                  ...prev,
+                  contentHtml: j.contentHtml || prev?.contentHtml,
+                  media: {
+                    images: [
+                      ...(prev?.media?.images || []),
+                      ...((j.media?.images || []).map(u => (typeof u === 'string' ? { src: u } : u)))
+                    ].filter((v, idx, arr) => {
+                      const s = typeof v === 'string' ? v : v.src;
+                      if (!s) return false;
+                      return arr.findIndex(x => (typeof x === 'string' ? x : x.src) === s) === idx;
+                    }),
+                    videos: [
+                      ...(prev?.media?.videos || []),
+                      ...((j.media?.videos || []))
+                    ].filter((v, idx, arr) => {
+                      const s = v && v.src;
+                      if (!s) return false;
+                      return arr.findIndex(x => x && x.src === s) === idx;
+                    })
+                  }
+                }));
+              }
+            }
+          } catch (e) {
+            // best-effort enrichment; ignore errors
+          }
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          console.warn('Article fetch aborted after timeout', timeoutMs);
+        } else {
+          console.error('Failed to refresh article', e);
+        }
+      } finally {
+        // If we never hydrated from state, end loading now
+        if (!initialHydratedRef.current) setLoading(false);
+      }
+    };
+    fetchFresh();
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [id, location.state]);
+
+  // Improve auto-generation context: set document title and meta description
+  useEffect(() => {
+    if (!article) return;
+    const prevTitle = document.title;
+    document.title = `${article.title || 'Article'} — Cleary`;
+
+    let meta = document.querySelector('meta[name="description"]');
+    const prevMeta = meta ? meta.getAttribute('content') : null;
+    const desc = article.description || article.summary || '';
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    if (desc) meta.setAttribute('content', desc);
+
+    return () => {
+      document.title = prevTitle;
+      if (meta && prevMeta !== null) meta.setAttribute('content', prevMeta);
+    };
+  }, [article]);
+
+  // Generate AI summary on demand
+  const handleGenerateSummary = async () => {
+    if (!article || article.summary || generatingSummary) return;
+    
+    setGeneratingSummary(true);
+    try {
+      // Call your AI service to generate summary
+      const res = await fetch('/api/article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: article.url,
+          title: article.title,
+          content: article.content || article.description
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setArticle(prev => ({
+          ...prev,
+          summary: data.summary || 'Summary generated successfully.'
+        }));
+        setShowSummary(true);
+      }
+    } catch (err) {
+      console.error('Failed to generate summary', err);
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
+
+  if (loading) {
+    // Skeleton for sub-3s perceived load
+    return (
+      <AnimatedBackground>
+        <Header />
+        <main className="container mx-auto px-6 pt-24 pb-12 max-w-4xl animate-pulse">
+          <div className="mb-6 h-6 w-32 bg-white/10 rounded" />
+          <div className="h-8 w-3/4 bg-white/10 rounded mb-4" />
+          <div className="h-96 w-full bg-white/5 rounded-2xl mb-8" />
+          <div className="space-y-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-5 w-full bg-white/5 rounded" />
+            ))}
+          </div>
+        </main>
+      </AnimatedBackground>
+    );
+  }
+
+  if (!article) {
+    return (
+      <AnimatedBackground>
+        <Header />
+        <div className="container mx-auto px-6 pt-24">
+          <p className="text-gray-400">Article not found</p>
+          <button onClick={() => navigate('/feed')} className="mt-4 theme-button inline-flex items-center space-x-2 px-4 py-2 rounded-xl">
+            Back to Feed
+          </button>
+        </div>
+      </AnimatedBackground>
+    );
+  }
+
+  return (
+    <AnimatedBackground mood={article.mood}>
+      <Header />
+      
+      <main className="container mx-auto px-6 pt-24 pb-12 max-w-4xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {/* Back button */}
+          <button
+            onClick={() => navigate('/feed')}
+            className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Feed</span>
+          </button>
+
+          {/* Article header */}
+          <div className="mb-8">
+            <div className="flex items-center space-x-4 text-sm text-gray-400 mb-4">
+              <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 capitalize">
+                {article.category}
+              </span>
+              <span className="flex items-center space-x-1">
+                <Clock className="w-4 h-4" />
+                <span>{article.readTime || 5} min read</span>
+              </span>
+              {article.author && (
+                <span className="flex items-center space-x-1">
+                  <User className="w-4 h-4" />
+                  <span>{article.author}</span>
+                </span>
+              )}
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+              {article.title}
+            </h1>
+
+            <div className="flex items-center justify-between py-4 border-y border-white/10">
+              <div className="text-gray-400">
+                <span className="font-semibold text-white">
+                  {typeof article.source === 'string' ? article.source : (article.source?.name || 'Source')}
+                </span>
+                {article.publishedAt && (
+                  <span className="ml-2">
+                    · {new Date(article.publishedAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Bookmark className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Share2 className="w-5 h-5" />
+                </motion.button>
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Featured image */}
+          {(() => {
+            const featuredImage = article.urlToImage || article.image || article.media?.images?.[0]?.src;
+            return featuredImage ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="relative h-96 rounded-2xl overflow-hidden mb-8"
+              >
+                <img
+                  src={featuredImage}
+                  alt={article.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.style.display = 'none'; }}
+                />
+              </motion.div>
+            ) : null;
+          })()}
+
+          {/* AI Summary - on demand generation */}
+          {!article.summary && !showSummary ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-8"
+            >
+              <button
+                onClick={handleGenerateSummary}
+                disabled={generatingSummary}
+                className="w-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50"
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  {generatingSummary ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span className="text-white font-semibold">Generating AI Summary...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-white">✨</span>
+                      <span className="text-white font-semibold">Click to Generate AI Summary</span>
+                    </>
+                  )}
+                </div>
+              </button>
+            </motion.div>
+          ) : (article.summary || showSummary) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-8 p-6 rounded-2xl bg-white/5 border border-white/10"
+            >
+              <h2 className="text-lg font-semibold text-white mb-3 flex items-center space-x-2">
+                <span className="text-white">✨</span>
+                <span>AI Summary</span>
+              </h2>
+              <p className="text-gray-300 leading-relaxed">{article.summary}</p>
+            </motion.div>
+          )}
+
+          {/* Media Gallery - Images */}
+          {article.media && article.media.images && article.media.images.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="mb-8"
+            >
+              <h2 className="text-xl font-semibold text-white mb-4">Images ({article.media.images.length})</h2>
+              <div className={`grid gap-4 ${article.media.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                {(() => {
+                  const featuredImage = article.urlToImage || article.image || article.media?.images?.[0]?.src;
+                  // Try to get video thumbnail if present
+                  let videoThumb = null;
+                  if (article.media && article.media.videos && article.media.videos.length > 0) {
+                    const video = article.media.videos[0];
+                    if (video && video.thumbnail) videoThumb = video.thumbnail;
+                  }
+                  // Filter out both featured image and video thumbnail from gallery
+                  const galleryImages = article.media.images.filter(img => {
+                    const imgSrc = typeof img === 'string' ? img : img.src;
+                    return imgSrc && imgSrc !== featuredImage && imgSrc !== videoThumb;
+                  });
+                  return galleryImages.slice(0, 8).map((img, idx) => {
+                    const imgSrc = typeof img === 'string' ? img : img.src;
+                    const imgAlt = typeof img === 'object' ? img.alt : '';
+                    return (
+                      <div key={idx} className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                        <img
+                          src={imgSrc}
+                          alt={imgAlt || `Article image ${idx + 1}`}
+                          className="w-full h-auto object-cover max-h-96"
+                          loading="lazy"
+                          onError={(e) => { 
+                            console.log('Image failed to load:', imgSrc);
+                            e.target.parentElement.style.display = 'none'; 
+                          }}
+                        />
+                        {imgAlt && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-2">
+                            <p className="text-xs text-gray-300">{imgAlt}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Media Gallery - Videos */}
+          {article.media && article.media.videos && article.media.videos.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.37 }}
+              className="mb-8"
+            >
+              <h2 className="text-xl font-semibold text-white mb-4">Videos ({article.media.videos.length})</h2>
+              <div className="space-y-4">
+                {article.media.videos.slice(0, 4).map((vid, idx) => {
+                  const videoSrc = typeof vid === 'string' ? vid : vid.src;
+                  const videoKind = typeof vid === 'object' ? vid.kind : 'iframe';
+                  // Custom video player for direct video files
+                  if (videoKind === 'video' && videoSrc) {
+                    return (
+                      <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10">
+                        <video
+                          controls
+                          className="w-full h-auto bg-black rounded-xl"
+                          src={videoSrc}
+                          type={vid.type || 'video/mp4'}
+                          preload="metadata"
+                          style={{ maxHeight: '480px' }}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                        {/* Custom controls: playback speed, volume, fullscreen */}
+                        <div className="absolute bottom-2 right-2 flex gap-2 items-center bg-black/60 rounded-lg px-3 py-1">
+                          <label className="text-xs text-white">Speed
+                            <select className="ml-1 bg-gray-800 text-white rounded px-1 py-0.5 text-xs" onChange={e => {
+                              const v = e.target.closest('div').previousSibling;
+                              if (v && v.tagName === 'VIDEO') v.playbackRate = parseFloat(e.target.value);
+                            }}>
+                              <option value="0.5">0.5x</option>
+                              <option value="0.75">0.75x</option>
+                              <option value="1" selected>1x</option>
+                              <option value="1.25">1.25x</option>
+                              <option value="1.5">1.5x</option>
+                              <option value="2">2x</option>
+                            </select>
+                          </label>
+                          <button className="text-xs text-white px-2 py-1 rounded bg-white/20 hover:bg-white/30" onClick={e => {
+                            const v = e.target.closest('div').previousSibling;
+                            if (v && v.tagName === 'VIDEO') {
+                              if (v.requestFullscreen) v.requestFullscreen();
+                              else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+                            }
+                          }}>Fullscreen</button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Iframe videos (YouTube/Vimeo)
+                  if (videoKind === 'iframe' && videoSrc) {
+                    // Embed the iframe directly for playback
+                    return (
+                      <div key={idx} className="relative rounded-xl overflow-hidden border border-white/10 bg-black">
+                        <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+                          <iframe
+                            src={videoSrc}
+                            title={`Video ${idx + 1}`}
+                            className="absolute inset-0 w-full h-full"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                          />
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Unknown type fallback
+                  return (
+                    <div key={idx} className="relative rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center min-h-[240px]">
+                      <span className="text-white text-xs">Video format not supported</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Full Article Content */}
+          <motion.article
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="prose prose-invert prose-lg max-w-none mb-8"
+          >
+            <h2 className="text-xl font-semibold text-white mb-4">Full Article</h2>
+            <div className="text-gray-300 leading-relaxed text-lg space-y-6">
+              {article.contentHtml ? (
+                <>
+                  <div 
+                    className="article-content"
+                    dangerouslySetInnerHTML={{ __html: article.contentHtml }}
+                    style={{
+                      lineHeight: '1.8',
+                      fontSize: '1.125rem'
+                    }}
+                  />
+                  {article.contentHtml.length < 500 && (
+                    <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-xl">
+                      <p className="text-gray-400 text-base">
+                        💡 This is the content available from the feed. For the complete article with images and interactive elements, visit the source below.
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : article.content ? (
+                <>
+                  {article.content.split('\n\n').filter(p => p.trim()).map((paragraph, idx) => (
+                    <p key={idx} className="mb-4 leading-8">{paragraph.trim()}</p>
+                  ))}
+                  {article.content.length < 500 && (
+                    <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-xl">
+                      <p className="text-gray-400 text-base">
+                        💡 This is the content available from the feed. For the complete article with images and interactive elements, visit the source below.
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : article.description ? (
+                <>
+                  <p className="leading-8">{article.description}</p>
+                  <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-xl">
+                    <p className="text-gray-400 text-base">
+                      📰 This is a preview. Read the complete article at the source for the full story and additional content.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="p-6 bg-white/5 border border-white/10 rounded-xl">
+                  <p className="text-gray-400 text-base">
+                    Full article content is available at the source. Click the button below to continue reading.
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.article>
+
+          {/* Tilt debate embed (auto-generation mode) */}
+          <div className="mt-12">
+            <h2 className="text-xl font-semibold text-white mb-4">Debate this article</h2>
+            <p className="text-gray-400 mb-4">
+              Join the discussion. The widget below creates a debate automatically from this page's context.
+            </p>
+            <TiltEmbed apiKey="tilt_61C15pgClQBmAlTxycVMTsiTWbXzBYSf5Qyq6wYcRT8" theme="midnight" />
+          </div>
+
+          {/* Read more at source button */}
+          {article.url && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mb-8"
+            >
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl theme-button font-semibold transition-all"
+              >
+                <span>Read Full Article at Source</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </motion.div>
+          )}
+
+          {/* Source attribution */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="mt-12 p-6 rounded-2xl bg-white/5 border border-white/10"
+          >
+            <p className="text-gray-400 text-sm">
+              This article was originally published by{' '}
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white hover:text-gray-300 underline"
+              >
+                {typeof article.source === 'string' ? article.source : (article.source?.name || 'Source')}
+              </a>
+            </p>
+          </motion.div>
+        </motion.div>
+      </main>
+    </AnimatedBackground>
+  );
+};
+
+export default ArticlePage;

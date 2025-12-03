@@ -1,0 +1,36 @@
+{
+  "name": "news-app-new",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "next": "14.2.10",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "framer-motion": "11.2.6",
+    "tailwindcss": "3.4.14",
+    "clsx": "2.1.0",
+    "next-auth": "5.0.0-beta.18",
+    "@prisma/client": "5.19.1",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "prisma": "5.19.1",
+    "typescript": "5.6.3",
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.2.10",
+    "postcss": "8.4.47",
+    "autoprefixer": "10.4.20",
+    "vitest": "1.6.0"
+  }
+}

@@ -1,0 +1,347 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles */
+:root {
+  --bg-start: #ffffff;
+  --bg-end: #ffffff;
+}
+
+/* Aurora Background Effect - ULTRA VISIBLE */
+@keyframes aurora-move {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(2) rotate(0deg);
+  }
+  50% {
+    transform: translate(30%, -20%) scale(2.2) rotate(15deg);
+  }
+}
+
+@keyframes aurora-move-reverse {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(2) rotate(0deg);
+  }
+  50% {
+    transform: translate(-30%, 20%) scale(2.2) rotate(-15deg);
+  }
+}
+
+.aurora-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.aurora-bg::before,
+.aurora-bg::after {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.aurora-bg::before {
+  /* Neutralized to grayscale */
+  background: radial-gradient(circle at 30% 30%, 
+    rgba(255,255,255,0.10) 0%,
+    rgba(255,255,255,0.06) 35%,
+    transparent 70%);
+  animation: aurora-move 12s ease-in-out infinite;
+  filter: blur(80px);
+  mix-blend-mode: screen;
+  opacity: 0.6;
+}
+
+.aurora-bg::after {
+  /* Neutralized to grayscale */
+  background: radial-gradient(circle at 70% 70%,
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.04) 35%,
+    transparent 70%);
+  animation: aurora-move-reverse 15s ease-in-out infinite;
+  filter: blur(80px);
+  mix-blend-mode: screen;
+  opacity: 0.5;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #a855f7 #1f2937;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9ca3af, #6b7280);
+  border-radius: 10px;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: #ffffff;
+  color: #000000;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark theme overrides via ThemeContext adds .dark on html */
+html.dark body {
+  background: #000000;
+  color: #ffffff;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.neon-text {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.6),
+    0 0 30px rgba(0, 128, 255, 0.8), 0 0 40px rgba(0, 128, 255, 0.6);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #ec4899, #a855f7, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Article content styles for sanitized HTML */
+.article-content {
+  color: #1f2937; /* slate-800 for light */
+  line-height: 1.8;
+}
+
+/* Light-mode overrides to make legacy Tailwind classes readable without refactoring every component */
+/* Scope to light theme only (no .dark on html) */
+html:not(.dark) .bg-white\/5 { background-color: rgba(0,0,0,0.03) !important; }
+html:not(.dark) .bg-white\/10 { background-color: rgba(0,0,0,0.05) !important; }
+html:not(.dark) .bg-white\/20 { background-color: rgba(0,0,0,0.08) !important; }
+html:not(.dark) .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
+html:not(.dark) .border-white\/20 { border-color: rgba(0,0,0,0.15) !important; }
+html:not(.dark) .text-white { color: #111827 !important; }
+html:not(.dark) .text-white\/90 { color: rgba(0,0,0,0.9) !important; }
+html:not(.dark) .text-white\/70 { color: rgba(0,0,0,0.7) !important; }
+html:not(.dark) .text-gray-400 { color: rgba(0,0,0,0.6) !important; }
+
+/* Theme utility tokens for panels/inputs/buttons */
+:root {
+  --panel-bg: rgba(0,0,0,0.03);
+  --panel-border: rgba(0,0,0,0.12);
+  --input-bg: rgba(0,0,0,0.02);
+  --input-border: rgba(0,0,0,0.2);
+  --input-fg: #111827;
+  --btn-bg: #000000;
+  --btn-fg: #ffffff;
+}
+html.dark {
+  --panel-bg: rgba(255,255,255,0.05);
+  --panel-border: rgba(255,255,255,0.12);
+  --input-bg: rgba(255,255,255,0.06);
+  --input-border: rgba(255,255,255,0.16);
+  --input-fg: #ffffff;
+  --btn-bg: #ffffff;
+  --btn-fg: #000000;
+}
+
+.theme-panel { background: var(--panel-bg); border: 1px solid var(--panel-border); }
+.theme-input { background: var(--input-bg); border: 1px solid var(--input-border); color: var(--input-fg); }
+.theme-button { background: var(--btn-bg); color: var(--btn-fg); }
+html.dark .article-content {
+  color: #d1d5db;
+}
+
+.article-content p {
+  margin-bottom: 1rem;
+  line-height: 1.8;
+}
+
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
+  color: #111827; /* gray-900 for light */
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+html.dark .article-content h1,
+html.dark .article-content h2,
+html.dark .article-content h3,
+html.dark .article-content h4,
+html.dark .article-content h5,
+html.dark .article-content h6 {
+  color: #ffffff;
+}
+
+.article-content h1 { font-size: 2rem; }
+.article-content h2 { font-size: 1.75rem; }
+.article-content h3 { font-size: 1.5rem; }
+.article-content h4 { font-size: 1.25rem; }
+
+.article-content a { text-decoration: underline; color: #111827; }
+.article-content a:hover { color: #000000; }
+html.dark .article-content a { color: #e5e7eb; }
+html.dark .article-content a:hover { color: #ffffff; }
+
+.article-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 1.5rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+html.dark .article-content img { border-color: rgba(255, 255, 255, 0.1); }
+
+.article-content ul,
+.article-content ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.article-content li {
+  margin-bottom: 0.5rem;
+}
+
+.article-content blockquote {
+  border-left: 4px solid #6b7280; /* gray-500 */
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: #9ca3af;
+}
+
+.article-content strong,
+.article-content b {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.article-content em,
+.article-content i {
+  font-style: italic;
+}
+
+.article-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+.article-content th,
+.article-content td {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.75rem;
+  text-align: left;
+}
+html.dark .article-content th,
+html.dark .article-content td { border-color: rgba(255, 255, 255, 0.1); }
+
+.article-content th {
+  background: rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+  color: #111827;
+}
+html.dark .article-content th {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.article-content figure {
+  margin: 1.5rem 0;
+}
+
+.article-content figcaption {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.article-content iframe,
+.article-content video {
+  max-width: 100%;
+  border-radius: 0.75rem;
+  margin: 1.5rem 0;
+}
+
